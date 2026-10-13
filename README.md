@@ -58,6 +58,31 @@ Preços padrão valem para meses novos; a opção explícita de aplicar ao mês 
 
 O banco SQLite e os originais ficam em `data/`, fora do controle de versão. Pare o aplicativo e copie **toda** essa pasta para backup. Restaurar essa pasta restaura os meses e os originais. Para outro local, defina `APP_DATA_DIR` antes de iniciar. A versão é para operação local, sem login ou controle por usuário; não exponha o servidor na Internet. O pacote do código não contém dados pessoais ou a planilha de trabalho.
 
+## Filtros de data
+
+Painel inicial, Fechamento mensal e Produtividade oferecem **Mês completo**, **Dia específico** e **Intervalo personalizado**. Escolha primeiro o mês de referência na lateral. O intervalo é dentro desse mês e inclui as datas inicial e final. O filtro usa a coluna Data da Leitura Atual com o mapeamento confirmado na importação, inclusive para bases já existentes; não precisa reimportar arquivos.
+
+Indicadores, categorias, gráficos e rankings usam apenas registros não excluídos, sem erros e com data válida dentro do período. Registros com erros e excluídos continuam disponíveis na conferência do período. Duplicidades são identificadas no mês inteiro, mesmo quando um dos registros não está no período mostrado. Pendências mensais continuam bloqueando o fechamento.
+
+Os registros sem data válida não são atribuídos a um dia nem entram nos indicadores filtrados, inclusive no modo Mês completo. Permanecem no histórico e no **acumulado mensal**, que aparece separado e preserva a regra original de inclusão dos registros sem data. A conferência mensal completa fica disponível em um expansor. Por isso, o acumulado mensal pode ser diferente do total do período. Na planilha fornecida há 46 registros sem data e 19.622 com data 10/10/2026; o acumulado continua R$ 30.454,12.
+
+Confirmar fechamento sempre fecha o mês inteiro, sem excluir registros devido ao filtro. Relatórios Excel/PDF continuam mensais. Metas permanecem mensais: o percentual na produtividade compara o realizado no período com a meta mensal, sem inventar rateio diário.
+
+## Atualizar o sistema instalado
+
+1. Pare o Streamlit com Ctrl+C. Faça uma cópia de segurança de toda a pasta `data/` (ou do local definido em APP_DATA_DIR).
+2. Extraia o ZIP atualizado em uma pasta temporária. Copie os arquivos de código e a pasta `tests/` para a instalação existente, substituindo os arquivos de código correspondentes. Inclua o novo `periods.py`. **Não substitua, remova ou recrie a pasta data, a pasta originais ou o arquivo contrato.sqlite3.** Não apague arquivos locais ou a `.venv`.
+3. As dependências não mudaram. No PowerShell, dentro da pasta instalada, execute:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_periods.py -v
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+No Linux/macOS use `.venv/bin/python`. Não há migração do banco nem reimportação necessária. Meses fechados, histórico, preços, metas e originais existentes são reutilizados.
+
+Para executar todos os testes: `python -m unittest discover -s tests -v` usando o Python da `.venv`. Os testes unitários usam fixtures isoladas, que nunca entram no sistema. Os testes de interface usam uma cópia temporária da base real de outubro/2026 e confirmam que banco e originais não mudam; sem essa base, são explicitamente ignorados. Para validar os cálculos originais com o XLSX fornecido, use validar_planilha.py como descrito abaixo.
+
 ## Validar com a planilha fornecida
 
 ```bash

@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 import core
 import storage
+import periods
 from exports import money, productivity, excel_report, pdf_report
 
 st.set_page_config(page_title='Gestão de Medição | Fechamento',page_icon='💧',layout='wide')
@@ -36,21 +37,67 @@ errors=sum(bool(r['result']['errors']) for r in active);conflicts=storage.confli
 st.caption(f"CONTRATO SABESP · {month} · {'FECHADO' if info['closed'] else 'EM CONFERÊNCIA'}")
 st.title(page)
 
+period_pages = ('Painel inicial', 'Fechamento mensal', 'Produtividade')
+period_rows = rows
+period_valid = active
+period_conflicts = conflicts
+if page in period_pages:
+    first, last = periods.month_bounds(month)
+    mode = st.radio('Período de visualização', ['Mês completo', 'Dia específico', 'Intervalo personalizado'],
+                    horizontal=True, key='period_mode')
+    # Widget identity includes month; changing months cannot retain stale bounds.
+    start, end = first, last
+    if mode == 'Dia específico':
+        start = end = st.date_input('Dia da leitura', value=first, min_value=first, max_value=last,
+                                   format='DD/MM/YYYY', key='period_day_' + month)
+    elif mode == 'Intervalo personalizado':
+        c1, c2 = st.columns(2)
+        start = c1.date_input('Data inicial', value=first, min_value=first, max_value=last,
+                              format='DD/MM/YYYY', key='period_start_' + month)
+        end = c2.date_input('Data final', value=last, min_value=first, max_value=last,
+                            format='DD/MM/YYYY', key='period_end_' + month)
+    mappings = periods.import_mappings(storage.imports(month))
+    try:
+        period_rows = periods.filter_period(rows, mappings, month, start, end)
+    except ValueError as e:
+        st.error(str(e))
+        period_rows = []
+    period_valid = periods.valid_records(period_rows)
+    period_conflicts = periods.visible_conflicts(conflicts, period_rows)
+    monthly_total = total
+    summary = core.summarize(period_valid, prices)
+    total = sum(r['total_cents'] for r in summary)
+    st.caption(f'Período inclusivo: {start:%d/%m/%Y} a {end:%d/%m/%Y} · coluna Data da Leitura Atual · dentro de {month}.')
+    st.info(f'Acumulado mensal preservado: {money(monthly_total)} · {len(rows)} registros importados. '
+            'O filtro não altera o fechamento nem os relatórios mensais.')
+    if errors or conflicts:
+        st.warning(f'Pendências no mês inteiro: {errors} registros com erros e {len(conflicts)} chaves repetidas. '
+                   'A identificação mensal permanece ativa independentemente do filtro.')
+    undated = sum(periods.record_date(r, mappings) is None for r in rows)
+    if undated:
+        st.caption(f'{undated} registros sem data válida: fora dos indicadores do período; '
+                   'permanecem no histórico e no acumulado conforme as regras originais.')
+    if not period_valid:
+        st.info('Nenhum registro válido no período selecionado.')
+
 def metrics():
     cols=st.columns(4)
-    cols[0].metric('Faturamento mensal',money(total))
+    cols[0].metric('Faturamento do período' if page in period_pages else 'Faturamento mensal',money(total))
     cols[1].metric('Leituras faturáveis',f"{sum(r['Quantidade'] for r in summary if r['key'] in ('138','128','137')):,}".replace(',','.'))
-    cols[2].metric('Registros ativos',f'{len(active):,}'.replace(',','.'))
-    cols[3].metric('Pendências',errors+len(conflicts))
+    cols[2].metric('Registros válidos do período' if page in period_pages else 'Registros ativos',
+                   f'{len(period_valid) if page in period_pages else len(active):,}'.replace(',','.'))
+    cols[3].metric('Pendências no período' if page in period_pages else 'Pendências',
+                   (sum(bool(r['result']['errors']) for r in period_rows if not r['excluded']) + len(period_conflicts))
+                   if page in period_pages else errors+len(conflicts))
 
 def summary_frame():
     return pd.DataFrame([{'Código':r['Código'],'Serviço':r['Categoria'],'Quantidade':r['Quantidade'],'Valor unitário':money(r['unit_cents']),'Total':money(r['total_cents'])} for r in summary])
 
 def record_frame(selected):
-    return pd.DataFrame([{'ID':r['id'],'Arquivo':r['name'],'Aba':r['sheet'],'Linha original':r['line'],'Funcionário':r['result']['employee'],'ATC':r['result']['city'],'Excluído':bool(r['excluded']),'Motivo':r['reason'],'Erros':'; '.join(r['result']['errors']),'Avisos':'; '.join(r['result']['alerts']),**{core.CATEGORIES[k][1]:v for k,v in r['result']['units'].items()}} for r in selected])
+    return pd.DataFrame([{'ID':r['id'],'Arquivo':r['name'],'Aba':r['sheet'],'Linha original':r['line'],'Data da leitura':str(r['raw'].get(mappings.get(r['import_id'], {}).get('date')) or ''),'Funcionário':r['result']['employee'],'ATC':r['result']['city'],'Excluído':bool(r['excluded']),'Motivo':r['reason'],'Erros':'; '.join(r['result']['errors']),'Avisos':'; '.join(r['result']['alerts']),**{core.CATEGORIES[k][1]:v for k,v in r['result']['units'].items()}} for r in selected])
 
 if page=='Painel inicial':
-    st.write('Acompanhe o faturamento, a medição e as pendências do mês selecionado.')
+    st.write('Acompanhe o faturamento, a medição e as pendências do período selecionado.')
     metrics()
     if not rows:st.info('Comece em Importar planilhas. Nenhum dado fictício foi carregado.')
     st.subheader('Composição do faturamento')
@@ -60,11 +107,11 @@ if page=='Painel inicial':
         st.subheader('Quantidade por categoria')
         st.bar_chart(pd.DataFrame({'Serviço':[r['Categoria'] for r in summary],'Quantidade':[r['Quantidade'] for r in summary]}).set_index('Serviço'),color='#147D92')
     with right:
-        st.subheader('Conferência do mês')
-        st.write(f'**{len(storage.imports(month))}** abas importadas')
-        st.write(f'**{sum(r["result"]["units"]["impressao"] for r in active)}** comunicados impressos')
-        st.write(f'**{sum(r["result"]["units"]["apontamento"] for r in active)}** apontamentos operacionais')
-        st.write(f'**{sum(bool(r["excluded"]) for r in rows)}** registros excluídos com justificativa')
+        st.subheader('Conferência do período')
+        st.write(f'**{len({r["import_id"] for r in period_rows})}** abas com registros no período')
+        st.write(f'**{sum(r["result"]["units"]["impressao"] for r in period_valid)}** comunicados impressos')
+        st.write(f'**{sum(r["result"]["units"]["apontamento"] for r in period_valid)}** apontamentos operacionais')
+        st.write(f'**{sum(bool(r["excluded"]) for r in period_rows)}** registros excluídos com justificativa no período')
         st.caption('Os adicionais podem incidir no mesmo registro de uma leitura; não são contados como novas leituras.')
 
 elif page=='Importar planilhas':
@@ -102,11 +149,11 @@ elif page=='Importar planilhas':
 
 elif page=='Fechamento mensal':
     metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
-    if errors or conflicts:st.error(f'{errors} registros com erros e {len(conflicts)} chaves repetidas. Resolver ou excluir com justificativa antes de fechar. Totais com erros são zerados; chaves repetidas deixam a prévia pendente.')
+    if errors or conflicts:st.error(f'No mês completo: {errors} registros com erros e {len(conflicts)} chaves repetidas. O filtro não oculta pendências para autorizar fechamento; resolva antes de fechar.')
     st.subheader('Conferência dos registros')
     category=st.selectbox('Categoria',['Todos',*[core.CATEGORIES[k][1] for k in core.CATEGORIES]])
     mode=st.selectbox('Exibir',['Todos','Com erros','Com avisos','Chaves repetidas','Excluídos'])
-    selected=rows
+    selected=period_rows
     if category!='Todos':
         key=next(k for k,v in core.CATEGORIES.items() if v[1]==category);selected=[r for r in selected if r['result']['units'][key]>0]
     ids={i for group in conflicts for i in group}
@@ -116,6 +163,8 @@ elif page=='Fechamento mensal':
     elif mode=='Excluídos':selected=[r for r in selected if r['excluded']]
     st.caption(f'{len(selected)} registros encontrados; linhas e arquivos de origem disponíveis.')
     st.dataframe(record_frame(selected),hide_index=True,width='stretch')
+    with st.expander('Histórico mensal completo (inclui registros sem data e fora do período)'):
+        st.dataframe(record_frame(rows), hide_index=True, width='stretch')
     with st.expander('Inspecionar dados originais / registrar decisão'):
         row_id=st.number_input('ID do registro',min_value=1,step=1)
         row=next((r for r in rows if r['id']==row_id),None)
@@ -132,7 +181,8 @@ elif page=='Fechamento mensal':
             try:storage.close_month(month,False,reason);st.session_state.pop('exports',None);st.rerun()
             except ValueError as e:st.error(str(e))
     else:
-        confirmed=st.checkbox('Conferi os registros e aprovo o fechamento deste mês.')
+        st.caption(f'Confirmar fecha o mês INTEIRO ({money(monthly_total)}), independentemente do filtro atual.')
+        confirmed=st.checkbox('Conferi os registros do mês inteiro e aprovo o fechamento mensal.')
         if st.button('Confirmar fechamento',type='primary',disabled=not confirmed or not rows or bool(errors or conflicts)):
             try:storage.close_month(month);st.session_state.pop('exports',None);st.rerun()
             except ValueError as e:st.error(str(e))
@@ -140,18 +190,19 @@ elif page=='Fechamento mensal':
 
 elif page=='Produtividade':
     st.write('Leituras faturáveis e adicionais separados. Registros excluídos não entram na produtividade.')
+    metrics()
     dimension=st.radio('Agrupar por',['Funcionário','Unidade / cidade (ATC)'],horizontal=True)
-    by='employee' if dimension=='Funcionário' else 'city';items=productivity(rows,prices,by)
-    if not items:st.info('Importe a planilha para acompanhar a produtividade.');st.stop()
+    by='employee' if dimension=='Funcionário' else 'city';items=productivity(period_valid,prices,by)
+    if not items:st.info('Não há produtividade válida no período selecionado.');st.stop()
     frame=pd.DataFrame(items);label=frame.columns[0]
     goals=storage.settings().get('goals',{}).get(month,{})
     frame['Meta mensal de leituras']=[goals.get(by+'|'+str(v)) for v in frame[label]]
-    frame['Atingimento (%)']=[round(100*r['Leituras faturáveis']/g,1) if g else None for r,g in zip(items,frame['Meta mensal de leituras'])]
+    frame['Atingimento da meta mensal no período (%)']=[round(100*r['Leituras faturáveis']/g,1) if g else None for r,g in zip(items,frame['Meta mensal de leituras'])]
     frame['Faturamento']=frame['total_cents'].map(money)
     st.dataframe(frame.drop(columns=['total_cents']),hide_index=True,width='stretch')
     st.subheader('Leituras faturáveis · 15 maiores volumes')
     st.bar_chart(frame.head(15).set_index(label)['Leituras faturáveis'],color='#147D92')
-    st.caption('Meta em branco significa não definida. As metas são informadas pelo usuário; nenhuma meta é presumida.')
+    st.caption('Meta em branco significa não definida. A meta continua mensal: o atingimento compara as leituras do período com a meta mensal, sem rateio ou meta diária presumida.')
     with st.form('goal'):
         who=st.selectbox('Definir meta para',frame[label].tolist());target=st.number_input('Meta mensal de leituras faturáveis',min_value=0,step=1)
         if st.form_submit_button('Salvar meta'):
