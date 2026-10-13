@@ -95,5 +95,27 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(at.metric[0].value,'R$ 30.454,12')
         self.assertFalse(at.exception)
 
+    def test_import_exclusion_confirmation_and_restore(self):
+        import storage,core
+        before=storage.records('2026-10');prices=storage.month_info('2026-10')['prices']
+        total=lambda:sum(r['total_cents'] for r in core.summarize(storage.records('2026-10'),prices))
+        baseline=total();entry=storage.imports('2026-10')[0]
+        at=self.app('Importar planilhas')
+        at.button(key='action_import_'+str(entry['id'])).click().run()
+        self.assertTrue(any(entry['name'] in x.value and 'Impacto estimado' in x.value for x in at.warning))
+        next(b for b in at.button if b.label=='Confirmar operação').click().run()
+        self.assertTrue(any('confirmação explícita' in e.value for e in at.error))
+        self.assertEqual(total(),baseline)
+        at.text_input[0].set_value('Conferência de exclusão pela interface')
+        at.checkbox[0].check()
+        next(b for b in at.button if b.label=='Confirmar operação').click().run()
+        self.assertFalse(at.exception);self.assertEqual(total(),0)
+        at.button(key='action_import_'+str(entry['id'])).click().run()
+        at.text_input[0].set_value('Restaurar após conferência')
+        at.checkbox[0].check()
+        next(b for b in at.button if b.label=='Confirmar operação').click().run()
+        self.assertFalse(at.exception);self.assertEqual(total(),baseline)
+        self.assertEqual(storage.records('2026-10'),before)
+
 
 if __name__=='__main__':unittest.main()

@@ -58,6 +58,16 @@ Preços padrão valem para meses novos; a opção explícita de aplicar ao mês 
 
 O banco SQLite e os originais ficam em `data/`, fora do controle de versão. Pare o aplicativo e copie **toda** essa pasta para backup. Restaurar essa pasta restaura os meses e os originais. Para outro local, defina `APP_DATA_DIR` antes de iniciar. A versão é para operação local, sem login ou controle por usuário; não exponha o servidor na Internet. O pacote do código não contém dados pessoais ou a planilha de trabalho.
 
+## Excluir e restaurar importações
+
+Em Importar planilhas → Arquivos importados e originais, cada aba importada tem identificação, data UTC, mês, quantidade de registros, faturamento correspondente e situação. Excluir importação abre a confirmação do arquivo/aba, mês, quantidade e impacto financeiro com os preços do mês. Informe justificativa e marque a confirmação explícita. Os registros deixam de faturar; o arquivo original e o histórico permanecem intactos. Restaurar importação usa a mesma confirmação e preserva exclusões individuais de registros anteriores.
+
+A operação afeta exclusivamente a importação selecionada, no mês selecionado. Arquivos com várias abas são geridos por importação/aba, sem exclusão das demais abas. Meses fechados exigem reabertura. Todas as tabelas, filtros, gráficos e rankings são recalculados; relatórios gerados anteriormente devem ser gerados novamente (downloads antigos não são alterados). Produtividade agora também permite agrupar por Grupo, disponível nos relatórios Excel e PDF.
+
+Para substituir um arquivo, exclua a importação antiga e importe o XLSX corrigido. Linhas idênticas de importações ativas continuam sendo ignoradas. O mesmo arquivo/aba já cadastrado deve ser restaurado, em vez de reimportado. A restauração é integral e bloqueada se alguma linha já estiver em outra importação ativa: exclua a substituta antes de restaurar. Linhas distintas com a mesma chave operacional continuam exigindo conferência antes do fechamento. Nenhum dado original é corrigido automaticamente.
+
+A atualização migra automaticamente o banco para versão 2 no primeiro início. **Antes da migração, cria e verifica um backup SQLite em data/backups/antes-migracao-v2-*.sqlite3. Se o backup falhar, a migração não prossegue.** A migração, exclusão e restauração são transacionais. O histórico registra data/hora UTC, arquivo, aba, mês, quantidades, impacto em centavos e justificativa. Mantenha também seu backup manual da pasta data completa, com os originais.
+
 ## Filtros de data
 
 Painel inicial, Fechamento mensal e Produtividade oferecem **Mês completo**, **Dia específico** e **Intervalo personalizado**. Escolha primeiro o mês de referência na lateral. O intervalo é dentro desse mês e inclui as datas inicial e final. O filtro usa a coluna Data da Leitura Atual com o mapeamento confirmado na importação, inclusive para bases já existentes; não precisa reimportar arquivos.
@@ -79,7 +89,7 @@ Confirmar fechamento sempre fecha o mês inteiro, sem excluir registros devido a
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-No Linux/macOS use `.venv/bin/python`. Não há migração do banco nem reimportação necessária. Meses fechados, histórico, preços, metas e originais existentes são reutilizados.
+No Linux/macOS use `.venv/bin/python`. No primeiro início desta versão, o banco é migrado automaticamente após backup SQLite verificado em data/backups. Não é necessário reimportar planilhas. Meses fechados, histórico, preços, metas e originais existentes são reutilizados.
 
 Para executar todos os testes: `python -m unittest discover -s tests -v` usando o Python da `.venv`. Os testes unitários usam fixtures isoladas, que nunca entram no sistema. Os testes de interface usam uma cópia temporária da base real de outubro/2026 e confirmam que banco e originais não mudam; sem essa base, são explicitamente ignorados. Para validar os cálculos originais com o XLSX fornecido, use validar_planilha.py como descrito abaixo.
 

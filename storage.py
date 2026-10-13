@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sqlite3
 from datetime import datetime, timezone
+from uuid import uuid4
 from core import CATEGORIES, evaluate, fingerprint
 
 DATA = Path(os.environ.get('APP_DATA_DIR', str(Path(__file__).parent / 'data')))
@@ -12,14 +13,49 @@ def connect():
     DATA.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(DATA / 'contrato.sqlite3')
     c.row_factory = sqlite3.Row
+    c.execute('PRAGMA busy_timeout=30000')
+    existing = c.execute("SELECT 1 FROM sqlite_master WHERE name='records'").fetchone()
+    if existing and c.execute('PRAGMA user_version').fetchone()[0] < 2:
+        # Take a consistent, verified SQLite backup BEFORE any schema change.
+        backup_dir = DATA / 'backups'; backup_dir.mkdir(exist_ok=True)
+        target = backup_dir / ('antes-migracao-v2-' + uuid4().hex + '.sqlite3')
+        with sqlite3.connect(target) as backup:
+            c.backup(backup)
+            if backup.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                c.close(); raise ValueError('Backup inválido; migração cancelada.')
+        try:
+            c.execute('BEGIN IMMEDIATE')
+            if c.execute('PRAGMA user_version').fetchone()[0] < 2:
+                c.execute('ALTER TABLE imports ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0')
+                c.execute('''CREATE TABLE records_v2 (id INTEGER PRIMARY KEY, month TEXT NOT NULL,
+                    import_id INTEGER NOT NULL, line INTEGER NOT NULL, fingerprint TEXT NOT NULL,
+                    raw TEXT NOT NULL, result TEXT NOT NULL, excluded INTEGER NOT NULL DEFAULT 0,
+                    reason TEXT, import_deleted INTEGER NOT NULL DEFAULT 0)''')
+                c.execute('INSERT INTO records_v2(id,month,import_id,line,fingerprint,raw,result,excluded,reason) SELECT id,month,import_id,line,fingerprint,raw,result,excluded,reason FROM records')
+                c.execute('DROP TABLE records')
+                c.execute('ALTER TABLE records_v2 RENAME TO records')
+                c.execute('CREATE UNIQUE INDEX active_fingerprints ON records(month,fingerprint) WHERE import_deleted=0')
+                c.execute('PRAGMA user_version=2')
+            c.commit()
+        except Exception:
+            c.rollback();c.close();raise
+    if existing:
+        return c
     c.executescript('''
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS months (month TEXT PRIMARY KEY, prices TEXT NOT NULL, closed INTEGER NOT NULL DEFAULT 0, closed_at TEXT);
-    CREATE TABLE IF NOT EXISTS imports (id INTEGER PRIMARY KEY, month TEXT NOT NULL, name TEXT NOT NULL, sha TEXT NOT NULL, sheet TEXT NOT NULL, mapping TEXT NOT NULL, headers TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(month,sha,sheet));
-    CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, month TEXT NOT NULL, import_id INTEGER NOT NULL, line INTEGER NOT NULL, fingerprint TEXT NOT NULL, raw TEXT NOT NULL, result TEXT NOT NULL, excluded INTEGER NOT NULL DEFAULT 0, reason TEXT, UNIQUE(month,fingerprint));
+    CREATE TABLE IF NOT EXISTS imports (id INTEGER PRIMARY KEY, month TEXT NOT NULL, name TEXT NOT NULL, sha TEXT NOT NULL, sheet TEXT NOT NULL, mapping TEXT NOT NULL, headers TEXT NOT NULL, created_at TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, UNIQUE(month,sha,sheet));
+    CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, month TEXT NOT NULL, import_id INTEGER NOT NULL, line INTEGER NOT NULL, fingerprint TEXT NOT NULL, raw TEXT NOT NULL, result TEXT NOT NULL, excluded INTEGER NOT NULL DEFAULT 0, reason TEXT, import_deleted INTEGER NOT NULL DEFAULT 0);
+    CREATE UNIQUE INDEX IF NOT EXISTS active_fingerprints ON records(month,fingerprint) WHERE import_deleted=0;
     CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, month TEXT, action TEXT, detail TEXT, created_at TEXT);
     ''')
+    c.execute('PRAGMA user_version=2')
     return c
+
+def ensure_open(c, month):
+    r = c.execute('SELECT closed FROM months WHERE month=?',(month,)).fetchone()
+    if r and r['closed']:
+        raise ValueError('Mês fechado. Reabra antes de alterar importações ou registros.')
 
 def now():
     return datetime.now(timezone.utc).isoformat()
@@ -56,6 +92,8 @@ def import_sheet(content, name, parsed, mapping, month):
         raise ValueError('Falha na preservação do original.')
     added = skipped = 0
     with connect() as c:
+        c.execute('BEGIN IMMEDIATE')
+        ensure_open(c,month)
         info = month_info(month)
         if info['closed']:
             raise ValueError('Mês fechado. Reabra antes de importar.')
@@ -64,7 +102,7 @@ def import_sheet(content, name, parsed, mapping, month):
             cur = c.execute('INSERT INTO imports(month,name,sha,sheet,mapping,headers,created_at) VALUES (?,?,?,?,?,?,?)',
                 (month, Path(name).name, sha, parsed['sheet'], json.dumps(mapping), json.dumps(parsed['headers']), now()))
         except sqlite3.IntegrityError:
-            raise ValueError('Esta aba deste arquivo já foi importada neste mês.') from None
+            raise ValueError('Esta aba já existe neste mês. Se excluída, use Restaurar importação. Para uma correção, importe o arquivo corrigido.') from None
         for row in parsed['records']:
             raw = row['raw']; result = evaluate(raw, mapping, month)
             cur2 = c.execute('INSERT OR IGNORE INTO records(month,import_id,line,fingerprint,raw,result) VALUES (?,?,?,?,?,?)',
@@ -75,10 +113,14 @@ def import_sheet(content, name, parsed, mapping, month):
             (month,'Importação',json.dumps({'arquivo':Path(name).name,'sha256':sha,'inseridos':added,'duplicados_ignorados':skipped}),now()))
     return added, skipped
 
-def records(month):
-    with connect() as c:
+def records(month, connection=None):
+    c=connection or connect()
+    try:
         rows = c.execute('SELECT r.*,i.name,i.sheet FROM records r JOIN imports i ON i.id=r.import_id WHERE r.month=? ORDER BY r.id', (month,)).fetchall()
-    return [{**dict(r), 'raw':json.loads(r['raw']), 'result':json.loads(r['result'])} for r in rows]
+    finally:
+        if connection is None:c.close()
+    return [{**dict(r), 'record_excluded':r['excluded'], 'excluded':int(bool(r['excluded'] or r['import_deleted'])),
+             'raw':json.loads(r['raw']), 'result':json.loads(r['result'])} for r in rows]
 
 def conflicts(rows):
     groups = {}
@@ -92,32 +134,75 @@ def exclude(month, row_id, reason, excluded=True):
     if not reason.strip():
         raise ValueError('Informe o motivo para registrar a decisão.')
     with connect() as c:
-        if month_info(month)['closed']:
-            raise ValueError('Reabra o mês primeiro.')
+        c.execute('BEGIN IMMEDIATE');ensure_open(c,month)
+        row=c.execute('SELECT import_deleted FROM records WHERE id=? AND month=?',(row_id,month)).fetchone()
+        if row and row['import_deleted']:
+            raise ValueError('Importação excluída: restaure o arquivo na tela Importar planilhas.')
         if c.execute('UPDATE records SET excluded=?,reason=? WHERE id=? AND month=?', (int(excluded),reason,row_id,month)).rowcount != 1:
             raise ValueError('Registro não encontrado.')
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)', (month,'Exclusão' if excluded else 'Reinclusão',f'ID {row_id}: {reason}',now()))
 
 def close_month(month, closed=True, reason=''):
-    rows = records(month)
-    if closed and (not rows or conflicts(rows) or any(r['result']['errors'] for r in rows if not r['excluded'])):
-        raise ValueError('Resolva os erros e chaves repetidas antes de fechar; o mês precisa ter registros.')
     if not closed and not reason.strip():
         raise ValueError('Informe o motivo da reabertura.')
     with connect() as c:
+        c.execute('BEGIN IMMEDIATE')
+        rows=records(month,c)
+        if closed and (not any(not r['excluded'] for r in rows) or conflicts(rows) or any(r['result']['errors'] for r in rows if not r['excluded'])):
+            raise ValueError('Resolva os erros e chaves repetidas antes de fechar; o mês precisa ter registros ativos.')
         c.execute('UPDATE months SET closed=?,closed_at=? WHERE month=?', (int(closed),now() if closed else None,month))
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)', (month,'Fechamento' if closed else 'Reabertura',reason,now()))
 
 def update_month_prices(month, prices):
     with connect() as c:
-        if month_info(month)['closed']:
-            raise ValueError('Mês fechado: preços preservados.')
+        c.execute('BEGIN IMMEDIATE');ensure_open(c,month)
         c.execute('UPDATE months SET prices=? WHERE month=?', (json.dumps(prices),month))
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)',(month,'Atualização de preços',json.dumps(prices),now()))
 
 def imports(month):
     with connect() as c:
-        return [dict(r) for r in c.execute('SELECT * FROM imports WHERE month=?',(month,))]
+        return [dict(r) for r in c.execute('SELECT * FROM imports WHERE month=? ORDER BY id',(month,))]
+
+def import_preview(month, import_id, connection=None):
+    c=connection or connect()
+    try:
+        entry=c.execute('SELECT * FROM imports WHERE id=? AND month=?',(import_id,month)).fetchone()
+        if not entry:raise ValueError('Importação não encontrada neste mês.')
+        month_row=c.execute('SELECT prices,closed FROM months WHERE month=?',(month,)).fetchone()
+        prices=json.loads(month_row['prices'])
+        linked=c.execute('SELECT * FROM records WHERE import_id=? AND month=? ORDER BY id',(import_id,month)).fetchall()
+        billable=[r for r in linked if not r['excluded']]
+        potential=sum(sum(json.loads(r['result'])['units'][k]*prices[k] for k in CATEGORIES) for r in billable)
+        # Detect any change between confirmation and commit, including prices or row decisions.
+        version=fingerprint({'entry':dict(entry),'month':dict(month_row),'rows':[dict(r) for r in linked]})
+        return {**dict(entry),'record_count':len(linked),'active_count':0 if entry['deleted'] else len(billable),
+                'potential_count':len(billable),'total_cents':0 if entry['deleted'] else potential,
+                'potential_cents':potential,'version':version}
+    finally:
+        if connection is None:c.close()
+
+def set_import_deleted(month, import_id, deleted, reason, expected_version=None):
+    if not reason.strip():raise ValueError('Informe a justificativa.')
+    with connect() as c:
+        c.execute('BEGIN IMMEDIATE');ensure_open(c,month)
+        preview=import_preview(month,import_id,c)
+        if expected_version is not None and expected_version != preview['version']:
+            raise ValueError('Dados ou preços mudaram. Abra a confirmação novamente para conferir o impacto atualizado.')
+        if bool(preview['deleted'])==bool(deleted):raise ValueError('A importação já está nessa situação.')
+        if not deleted:
+            repeated=c.execute('''SELECT COUNT(*) FROM records old JOIN records current
+                ON current.month=old.month AND current.fingerprint=old.fingerprint
+                AND current.import_deleted=0 AND current.import_id<>old.import_id
+                WHERE old.month=? AND old.import_id=?''',(month,import_id)).fetchone()[0]
+            if repeated:raise ValueError(f'Restauração bloqueada: {repeated} registros já pertencem a importações ativas. Exclua a importação substituta antes de restaurar; nenhum registro foi alterado.')
+        c.execute('UPDATE imports SET deleted=? WHERE id=? AND month=?',(int(deleted),import_id,month))
+        c.execute('UPDATE records SET import_deleted=? WHERE import_id=? AND month=?',(int(deleted),import_id,month))
+        detail={'import_id':import_id,'arquivo':preview['name'],'aba':preview['sheet'],'mes':month,
+                'registros_vinculados':preview['record_count'],'registros_removidos_ou_restaurados':preview['potential_count'],
+                'impacto_centavos':preview['potential_cents'],'justificativa':reason.strip()}
+        c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)',
+                  (month,'Excluir importação' if deleted else 'Restaurar importação',json.dumps(detail,ensure_ascii=False),now()))
+    return detail
 
 def audit(month):
     with connect() as c:

@@ -25,7 +25,7 @@ def productivity(rows, prices, by):
         g['Leituras faturáveis'] += sum(units[k] for k in ('138','128','137'))
         g['Comunicados'] += units['impressao']; g['Apontamentos'] += units['apontamento']
         g['total_cents'] += sum(units[k] * prices[k] for k in CATEGORIES)
-    label = 'Funcionário' if by == 'employee' else 'Unidade / cidade (ATC)'
+    label = {'employee':'Funcionário','city':'Unidade / cidade (ATC)','group':'Grupo'}[by]
     return [{label: name, **v} for name,v in sorted(groups.items(), key=lambda x:-x[1]['Leituras faturáveis'])]
 
 def excel_report(month, rows, prices, imports, audit, contract, closed, goals=None):
@@ -40,16 +40,16 @@ def excel_report(month, rows, prices, imports, audit, contract, closed, goals=No
     sheet.append(['','TOTAL','','',total/100])
     for row in sheet.iter_rows(min_row=6):
         for cell in (row[3],row[4]):cell.number_format = '"R$" #,##0.00'
-    for by, title in [('employee','Funcionários'),('city','Unidades')]:
+    for by, title in [('employee','Funcionários'),('city','Unidades'),('group','Grupos')]:
         s = book.create_sheet(title); entries = productivity(rows,prices,by)
-        s.append([('Funcionário' if by=='employee' else 'Unidade / cidade (ATC)'), 'Registros','Leituras faturáveis','Comunicados','Apontamentos','Total (R$)'])
+        s.append([{'employee':'Funcionário','city':'Unidade / cidade (ATC)','group':'Grupo'}[by], 'Registros','Leituras faturáveis','Comunicados','Apontamentos','Total (R$)'])
         for r in entries:s.append([*list(r.values())[:-1],r['total_cents']/100])
         for row in s.iter_rows(min_row=2):row[-1].number_format='"R$" #,##0.00'
     s=book.create_sheet('Metas');s.append(['Dimensão','Funcionário / ATC','Leituras faturáveis','Meta mensal','Atingimento (%)'])
-    for by in ('employee','city'):
+    for by in ('employee','city','group'):
         for r in productivity(rows,prices,by):
             name=next(iter(r.values()));goal=goals.get(by+'|'+name)
-            s.append(['Funcionário' if by=='employee' else 'ATC',name,r['Leituras faturáveis'],goal,round(100*r['Leituras faturáveis']/goal,1) if goal else None])
+            s.append([{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],name,r['Leituras faturáveis'],goal,round(100*r['Leituras faturáveis']/goal,1) if goal else None])
     s = book.create_sheet('Conferência')
     s.append(['ID','Arquivo','Aba','Linha original','Excluído','Motivo','Erros','Avisos',*CATEGORIES.keys(),'Total (R$)'])
     for row in rows:
@@ -59,8 +59,8 @@ def excel_report(month, rows, prices, imports, audit, contract, closed, goals=No
     headers = list(dict.fromkeys(h for row in rows for h in row['raw']))
     raw.append(['ID do registro',*headers])
     for row in rows:raw.append([row['id'],*[row['raw'].get(h) for h in headers]])
-    s=book.create_sheet('Arquivos e integridade');s.append(['Arquivo','Aba','SHA-256','Importado em UTC','Mapeamento'])
-    for r in imports:s.append([r['name'],r['sheet'],r['sha'],r['created_at'],r['mapping']])
+    s=book.create_sheet('Arquivos e integridade');s.append(['Arquivo','Aba','SHA-256','Importado em UTC','Mapeamento','Situação'])
+    for r in imports:s.append([r['name'],r['sheet'],r['sha'],r['created_at'],r['mapping'],'Excluído' if r.get('deleted') else 'Ativo'])
     s=book.create_sheet('Histórico');s.append(['Ação','Detalhe','Data UTC'])
     for r in audit:s.append([r['action'],r['detail'],r['created_at']])
     # User strings must remain text, never become executable Excel formulas.
@@ -91,17 +91,17 @@ def pdf_report(month,rows,prices,contract,closed,goals=None):
     chart=VerticalBarChart();chart.x=40;chart.y=40;chart.width=620;chart.height=125
     chart.data=[[r['Quantidade'] for r in summary]];chart.categoryAxis.categoryNames=['R$ 1,38','R$ 1,28','R$ 1,37','Impressão','Apontamento'];chart.valueAxis.valueMin=0;chart.bars[0].fillColor=colors.HexColor('#147D92')
     d=Drawing(740,195);d.add(chart);story.append(d)
-    for by in ('employee','city'):
-        title='Produtividade por funcionário' if by=='employee' else 'Produtividade por unidade / cidade (ATC)'
+    for by in ('employee','city','group'):
+        title={'employee':'Produtividade por funcionário','city':'Produtividade por unidade / cidade (ATC)','group':'Produtividade por grupo'}[by]
         story.extend([PageBreak(),Paragraph(title,styles['Heading1'])])
         entries=productivity(rows,prices,by)
-        story.append(table([['Funcionário' if by=='employee' else 'ATC','Registros','Leituras','Comunicados','Apontamentos','Valor']]+[[paragraph(next(iter(r.values()))),r['Registros'],r['Leituras faturáveis'],r['Comunicados'],r['Apontamentos'],money(r['total_cents'])] for r in entries]))
+        story.append(table([[{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],'Registros','Leituras','Comunicados','Apontamentos','Valor']]+[[paragraph(next(iter(r.values()))),r['Registros'],r['Leituras faturáveis'],r['Comunicados'],r['Apontamentos'],money(r['total_cents'])] for r in entries]))
     story.extend([PageBreak(),Paragraph('Metas mensais informadas',styles['Heading1'])])
     goal_rows=[]
-    for by in ('employee','city'):
+    for by in ('employee','city','group'):
         for r in productivity(rows,prices,by):
             name=next(iter(r.values()));goal=goals.get(by+'|'+name)
-            if goal:goal_rows.append(['Funcionário' if by=='employee' else 'ATC',paragraph(name),r['Leituras faturáveis'],goal,f"{100*r['Leituras faturáveis']/goal:.1f}%"])
+            if goal:goal_rows.append([{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],paragraph(name),r['Leituras faturáveis'],goal,f"{100*r['Leituras faturáveis']/goal:.1f}%"])
     story.append(table([['Dimensão','Funcionário / ATC','Leituras','Meta','Atingimento']]+goal_rows) if goal_rows else paragraph('Nenhuma meta mensal informada. Metas não são presumidas.'))
     story += [Spacer(1,12),paragraph('Regras: fatura retida não gera serviço de leitura. Causa preenchida gera a categoria R$ 1,37; causa vazia é separada por fatura impressa. Adicionais em todos os registros. CO1 Atual preenchido gera um apontamento, inclusive códigos de vistoria, sem cobrança do serviço de vistoria. Registros sem data e releituras incluídos. O Excel contém a conferência detalhada e os dados importados; originais preservados separadamente.')]
     doc.build(story);return output.getvalue()

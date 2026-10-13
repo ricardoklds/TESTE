@@ -116,8 +116,9 @@ if page=='Painel inicial':
 
 elif page=='Importar planilhas':
     st.write('Importe uma aba por vez. O arquivo original é arquivado integralmente e identificado por SHA-256.')
-    if info['closed']:st.warning('Este mês está fechado. Reabra em Fechamento mensal para importar.');st.stop()
-    uploaded=st.file_uploader('Planilha de leitura (.xlsx)',type=['xlsx'])
+    if info['closed']:st.warning('Este mês está fechado. Os originais e o histórico continuam disponíveis; reabra para importar, excluir ou restaurar.')
+    if message:=st.session_state.pop('import_message',None):st.success(message)
+    uploaded=st.file_uploader('Planilha de leitura (.xlsx)',type=['xlsx'],disabled=bool(info['closed']))
     if uploaded:
         content=uploaded.getvalue()
         try:parsed=parsed_file(content)
@@ -136,16 +137,48 @@ elif page=='Importar planilhas':
         st.caption('* Obrigatório. Os dados não são alterados pelo mapeamento.')
         st.dataframe(pd.DataFrame([r['raw'] for r in p['records'][:15]]).astype(str),hide_index=True)
         confirmed=st.checkbox(f'Confirmo o mapeamento e o mês {month}. Incluir sem data, releituras e adicionais em faturas retidas, conforme regras confirmadas.')
-        if st.button('Processar e importar',type='primary',disabled=not confirmed):
+        if st.button('Processar e importar',type='primary',disabled=not confirmed or bool(info['closed'])):
             try:
                 with st.spinner('Preservando o original e processando os registros…'):added,skipped=storage.import_sheet(content,uploaded.name,p,mapping,month)
-                st.success(f'Importação concluída: {added} registros inseridos; {skipped} duplicatas idênticas ignoradas.')
+                st.session_state['import_message']=f'Importação concluída: {added} registros inseridos; {skipped} duplicatas idênticas ignoradas.'
                 st.session_state.pop('exports',None)
+                st.rerun()
             except Exception as e:st.error(str(e))
-    with st.expander('Arquivos importados e originais'):
+    with st.expander('Arquivos importados e originais',expanded=True):
+        st.caption('Operações por aba/importação do mês selecionado. Excluir não apaga o original. Valores usam os preços atuais deste mês.')
         for entry in storage.imports(month):
-            st.write(f"{entry['name']} · {entry['sheet']}")
-            st.download_button('Baixar original intacto',(storage.DATA/'originais'/(entry['sha']+'.xlsx')).read_bytes(),file_name=entry['name'],key=f"original_{entry['id']}")
+            preview=storage.import_preview(month,entry['id'])
+            st.write(f"**{entry['name']}** · {entry['sheet']} · {'Excluído' if entry['deleted'] else 'Ativo'}")
+            st.caption(f"Importado em UTC: {entry['created_at']} · Mês: {month} · Registros vinculados: {preview['record_count']} · No fechamento: {preview['active_count']} · Faturamento: {money(preview['total_cents'])}")
+            left,right=st.columns(2)
+            left.download_button('Baixar original intacto',(storage.DATA/'originais'/(entry['sha']+'.xlsx')).read_bytes(),file_name=entry['name'],key=f"original_{entry['id']}")
+            deleted=not bool(entry['deleted'])
+            if right.button('Excluir importação' if deleted else 'Restaurar importação',key=f"action_import_{entry['id']}",disabled=bool(info['closed'])):
+                st.session_state['import_action']={'month':month,'id':entry['id'],'deleted':deleted,'preview':preview}
+            st.divider()
+        pending=st.session_state.get('import_action')
+        if pending and pending['month']==month:
+            preview=pending['preview'];action='exclusão' if pending['deleted'] else 'restauração'
+            st.warning(f"Confirmar {action}: {preview['name']} · Aba: {preview['sheet']} · Mês: {month}. "
+                       f"{preview['record_count']} registros vinculados; {preview['potential_count']} registros sairão/voltarão ao fechamento. "
+                       f"Impacto estimado: {'−' if pending['deleted'] else '+'}{money(preview['potential_cents'])}. Outros arquivos e meses serão preservados.")
+            with st.form('confirm_import_'+str(pending['id'])+'_'+preview['version']):
+                reason=st.text_input('Justificativa da exclusão ou restauração')
+                confirmed=st.checkbox(f'Confirmo explicitamente a {action} desta importação.')
+                submit=st.form_submit_button('Confirmar operação',disabled=bool(info['closed']))
+            if submit:
+                if not confirmed:st.error('Marque a confirmação explícita antes de prosseguir.')
+                else:
+                    try:
+                        storage.set_import_deleted(month,pending['id'],pending['deleted'],reason,preview['version'])
+                        st.session_state.pop('exports',None);st.session_state.pop('import_action',None)
+                        st.session_state['import_message']='Importação excluída do fechamento.' if pending['deleted'] else 'Importação restaurada sem duplicidades.'
+                        st.rerun()
+                    except ValueError as e:st.error(str(e))
+            if st.button('Cancelar operação'):
+                st.session_state.pop('import_action',None);st.rerun()
+        with st.expander('Histórico de exclusões e restaurações'):
+            st.dataframe(pd.DataFrame([r for r in storage.audit(month) if r['action'] in ('Excluir importação','Restaurar importação')]),hide_index=True)
 
 elif page=='Fechamento mensal':
     metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
@@ -171,7 +204,8 @@ elif page=='Fechamento mensal':
         if row:
             st.dataframe(pd.DataFrame({'Coluna':list(row['raw']),'Valor original':[str(v) if v is not None else '' for v in row['raw'].values()]}),hide_index=True)
             reason=st.text_input('Justificativa da decisão')
-            if st.button('Reincluir registro' if row['excluded'] else 'Excluir do faturamento',disabled=bool(info['closed'])):
+            if row['import_deleted']:st.info('Registro de importação excluída. Restaure o arquivo na tela Importar planilhas.')
+            if st.button('Reincluir registro' if row['excluded'] else 'Excluir do faturamento',disabled=bool(info['closed'] or row['import_deleted'])):
                 try:storage.exclude(month,row_id,reason,not bool(row['excluded']));st.session_state.pop('exports',None);st.rerun()
                 except ValueError as e:st.error(str(e))
     if info['closed']:
@@ -191,8 +225,8 @@ elif page=='Fechamento mensal':
 elif page=='Produtividade':
     st.write('Leituras faturáveis e adicionais separados. Registros excluídos não entram na produtividade.')
     metrics()
-    dimension=st.radio('Agrupar por',['Funcionário','Unidade / cidade (ATC)'],horizontal=True)
-    by='employee' if dimension=='Funcionário' else 'city';items=productivity(period_valid,prices,by)
+    dimension=st.radio('Agrupar por',['Funcionário','Unidade / cidade (ATC)','Grupo'],horizontal=True)
+    by={'Funcionário':'employee','Unidade / cidade (ATC)':'city','Grupo':'group'}[dimension];items=productivity(period_valid,prices,by)
     if not items:st.info('Não há produtividade válida no período selecionado.');st.stop()
     frame=pd.DataFrame(items);label=frame.columns[0]
     goals=storage.settings().get('goals',{}).get(month,{})
