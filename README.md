@@ -80,6 +80,26 @@ Confirmar fechamento sempre fecha o mês inteiro, sem excluir registros devido a
 
 ## Atualizar o sistema instalado
 
+### Otimização para bases grandes
+
+A versão de desempenho cria automaticamente uma projeção SQL (`record_metrics`) dos resultados financeiros já salvos. Não reavalia as cinco regras nem altera raw/result, IDs, preços ou planilhas. Antes da migração para versão 3, cria um backup verificado em `data/backups/antes-migracao-v3-*.sqlite3`. A construção inicial de projeções e índices pode demorar, conforme tamanho do banco/disco; aguarde o primeiro início. Não interrompa esse processo. As migrações são transacionais.
+
+Depois disso, a navegação usa somas e agrupamentos SQL, cache limitado por revisão do banco e tabelas paginadas (100, 250 ou 500 linhas). Alterações de importações, registros, preços, configuração e fechamento invalidam o cache por evento confirmado. Datas e categorias são consultadas sobre projeções indexadas, sem carregar todos os JSONs. O histórico mensal completo é carregado apenas se solicitado e também é paginado. Originais só são lidos para download por solicitação explícita.
+
+A importação mostra prévia de até 15 linhas, sem ler todas as linhas para navegar. A importação efetiva lê o XLSX em fluxo e grava lotes de 1.000 linhas dentro da transação, mantendo os critérios e a deduplicação. Uma falha desfaz a importação inteira. O carregamento de strings internas do formato XLSX pelo openpyxl e o próprio arquivo enviado ainda podem consumir memória; a quantidade de registros deixa de ser mantida integralmente numa lista Python.
+
+Relatórios padrão Excel/PDF são agregados e rápidos. O Excel com TODAS as colunas e registros continua disponível no botão **Gerar Excel completo em segundo plano**. Ele usa um snapshot consistente do banco e escrita incremental, sem manter milhões de células em memória, permitindo navegar durante a geração. Pode levar minutos em bases grandes e exige espaço livre para o snapshot e o XLSX. Downloads preparados ainda consomem memória proporcional ao arquivo. Dados alterados após a geração exigem gerar novamente; não se entrega um relatório antigo como atual.
+
+Veja `PERFORMANCE.md` para resultados efetivamente medidos e limitações. Não há garantia de 2 segundos para todo computador, primeiro início, upload, importação ou exportação completa.
+
+Para atualizar no Windows **não reinstale o Python**: siga os passos abaixo, incluindo os novos módulos `queries.py`, `cached_queries.py`, `perf_schema.py`, `excel_io.py` e `fast_reports.py`. As versões das dependências não mudaram. Para medir a instalação local, no PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe benchmark.py --output benchmark-local.json
+```
+
+O benchmark consulta a base existente sem alterá-la, salvo a migração automática com backup se ainda pendente. `--load 400000` cria uma base ARTIFICIAL temporária para medir escala; nunca representa dados reais da empresa. Essa opção exige espaço em disco e usa registros de outubro/2026 como modelos. Os testes de integração também usam especificamente a base real fornecida de outubro/2026 e bancos temporários; não confunda execução sem essa base com validação completa.
+
 1. Pare o Streamlit com Ctrl+C. Faça uma cópia de segurança de toda a pasta `data/` (ou do local definido em APP_DATA_DIR).
 2. Extraia o ZIP atualizado em uma pasta temporária. Copie os arquivos de código e a pasta `tests/` para a instalação existente, substituindo os arquivos de código correspondentes. Inclua o novo `periods.py`. **Não substitua, remova ou recrie a pasta data, a pasta originais ou o arquivo contrato.sqlite3.** Não apague arquivos locais ou a `.venv`.
 3. As dependências não mudaram. No PowerShell, dentro da pasta instalada, execute:
@@ -89,7 +109,7 @@ Confirmar fechamento sempre fecha o mês inteiro, sem excluir registros devido a
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-No Linux/macOS use `.venv/bin/python`. No primeiro início desta versão, o banco é migrado automaticamente após backup SQLite verificado em data/backups. Não é necessário reimportar planilhas. Meses fechados, histórico, preços, metas e originais existentes são reutilizados.
+No Linux/macOS use `.venv/bin/python`. No primeiro início desta versão, o banco é migrado automaticamente após backup SQLite verificado em data/backups. Não é necessário reimportar planilhas. Meses fechados, histórico, preços, metas e originais existentes são reutilizados. Para bases grandes, execute apenas o teste unitário indicado nos passos de atualização; a suíte completa de integração depende da base original fornecida, não de qualquer banco do usuário.
 
 Para executar todos os testes: `python -m unittest discover -s tests -v` usando o Python da `.venv`. Os testes unitários usam fixtures isoladas, que nunca entram no sistema. Os testes de interface usam uma cópia temporária da base real de outubro/2026 e confirmam que banco e originais não mudam; sem essa base, são explicitamente ignorados. Para validar os cálculos originais com o XLSX fornecido, use validar_planilha.py como descrito abaixo.
 

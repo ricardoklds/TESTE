@@ -40,6 +40,8 @@ def connect():
         except Exception:
             c.rollback();c.close();raise
     if existing:
+        from perf_schema import prepare
+        prepare(c,DATA)
         return c
     c.executescript('''
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -50,6 +52,8 @@ def connect():
     CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, month TEXT, action TEXT, detail TEXT, created_at TEXT);
     ''')
     c.execute('PRAGMA user_version=2')
+    from perf_schema import prepare
+    prepare(c,DATA)
     return c
 
 def ensure_open(c, month):
@@ -103,12 +107,17 @@ def import_sheet(content, name, parsed, mapping, month):
                 (month, Path(name).name, sha, parsed['sheet'], json.dumps(mapping), json.dumps(parsed['headers']), now()))
         except sqlite3.IntegrityError:
             raise ValueError('Esta aba já existe neste mês. Se excluída, use Restaurar importação. Para uma correção, importe o arquivo corrigido.') from None
+        batch=[]
+        def insert_batch(batch):
+            result=c.executemany('INSERT OR IGNORE INTO records(month,import_id,line,fingerprint,raw,result) VALUES (?,?,?,?,?,?)',batch)
+            return result.rowcount
         for row in parsed['records']:
             raw = row['raw']; result = evaluate(raw, mapping, month)
-            cur2 = c.execute('INSERT OR IGNORE INTO records(month,import_id,line,fingerprint,raw,result) VALUES (?,?,?,?,?,?)',
-                (month, cur.lastrowid, row['line'], fingerprint(raw), json.dumps(raw, ensure_ascii=False), json.dumps(result, ensure_ascii=False)))
-            added += cur2.rowcount
-            skipped += 1 - cur2.rowcount
+            batch.append((month,cur.lastrowid,row['line'],fingerprint(raw),json.dumps(raw,ensure_ascii=False),json.dumps(result,ensure_ascii=False)))
+            if len(batch)>=1000:
+                count=insert_batch(batch);added+=count;skipped+=len(batch)-count;batch=[]
+        if batch:
+            count=insert_batch(batch);added+=count;skipped+=len(batch)-count
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)',
             (month,'Importação',json.dumps({'arquivo':Path(name).name,'sha256':sha,'inseridos':added,'duplicados_ignorados':skipped}),now()))
     return added, skipped
@@ -147,8 +156,9 @@ def close_month(month, closed=True, reason=''):
         raise ValueError('Informe o motivo da reabertura.')
     with connect() as c:
         c.execute('BEGIN IMMEDIATE')
-        rows=records(month,c)
-        if closed and (not any(not r['excluded'] for r in rows) or conflicts(rows) or any(r['result']['errors'] for r in rows if not r['excluded'])):
+        status=c.execute('SELECT COUNT(*) active,COALESCE(SUM(errors>0),0) errors FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0',(month,)).fetchone()
+        duplicate=c.execute('SELECT 1 FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0 AND business_key IS NOT NULL GROUP BY business_key HAVING COUNT(*)>1 LIMIT 1',(month,)).fetchone()
+        if closed and (not status['active'] or status['errors'] or duplicate):
             raise ValueError('Resolva os erros e chaves repetidas antes de fechar; o mês precisa ter registros ativos.')
         c.execute('UPDATE months SET closed=?,closed_at=? WHERE month=?', (int(closed),now() if closed else None,month))
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)', (month,'Fechamento' if closed else 'Reabertura',reason,now()))
@@ -170,13 +180,18 @@ def import_preview(month, import_id, connection=None):
         if not entry:raise ValueError('Importação não encontrada neste mês.')
         month_row=c.execute('SELECT prices,closed FROM months WHERE month=?',(month,)).fetchone()
         prices=json.loads(month_row['prices'])
-        linked=c.execute('SELECT * FROM records WHERE import_id=? AND month=? ORDER BY id',(import_id,month)).fetchall()
-        billable=[r for r in linked if not r['excluded']]
-        potential=sum(sum(json.loads(r['result'])['units'][k]*prices[k] for k in CATEGORIES) for r in billable)
+        stats=c.execute('''SELECT COUNT(*) records,COALESCE(SUM(excluded=0),0) billable,
+            COALESCE(SUM(CASE WHEN excluded=0 THEN u138 ELSE 0 END),0) "138",
+            COALESCE(SUM(CASE WHEN excluded=0 THEN u128 ELSE 0 END),0) "128",
+            COALESCE(SUM(CASE WHEN excluded=0 THEN u137 ELSE 0 END),0) "137",
+            COALESCE(SUM(CASE WHEN excluded=0 THEN uprint ELSE 0 END),0) impressao,
+            COALESCE(SUM(CASE WHEN excluded=0 THEN uop ELSE 0 END),0) apontamento
+            FROM record_metrics WHERE import_id=? AND month=?''',(import_id,month)).fetchone()
+        potential=sum(stats[k]*prices[k] for k in CATEGORIES)
         # Detect any change between confirmation and commit, including prices or row decisions.
-        version=fingerprint({'entry':dict(entry),'month':dict(month_row),'rows':[dict(r) for r in linked]})
-        return {**dict(entry),'record_count':len(linked),'active_count':0 if entry['deleted'] else len(billable),
-                'potential_count':len(billable),'total_cents':0 if entry['deleted'] else potential,
+        version=fingerprint({'entry':dict(entry),'month':dict(month_row),'revision':c.execute('SELECT revision FROM cache_revision WHERE id=1').fetchone()[0]})
+        return {**dict(entry),'record_count':stats['records'],'active_count':0 if entry['deleted'] else stats['billable'],
+                'potential_count':stats['billable'],'total_cents':0 if entry['deleted'] else potential,
                 'potential_cents':potential,'version':version}
     finally:
         if connection is None:c.close()

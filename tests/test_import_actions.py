@@ -82,6 +82,12 @@ class ImportActions(unittest.TestCase):
     def test_migration_backup_and_exact_records(self):
         self.add(self.raw[:2])
         with sqlite3.connect(storage.DATA/'contrato.sqlite3') as old:
+            for name, in old.execute("SELECT name FROM sqlite_master WHERE type='trigger'").fetchall():
+                old.execute('DROP TRIGGER "'+name+'"')
+            old.execute('DROP TABLE record_metrics')
+            old.execute('DROP TABLE cache_revision')
+            for index in ('records_import','records_month_id','audit_month'):
+                old.execute('DROP INDEX '+index)
             old.execute('DROP INDEX active_fingerprints')
             old.execute('ALTER TABLE records DROP COLUMN import_deleted')
             old.execute('ALTER TABLE imports DROP COLUMN deleted')

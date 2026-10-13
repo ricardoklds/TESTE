@@ -73,7 +73,7 @@ def excel_report(month, rows, prices, imports, audit, contract, closed, goals=No
                 if isinstance(cell.value,str):cell.data_type='s'
     output=BytesIO();book.save(output);return output.getvalue()
 
-def pdf_report(month,rows,prices,contract,closed,goals=None):
+def pdf_report(month,rows,prices,contract,closed,goals=None,summary_data=None,productivity_data=None,record_count=None,excluded_count=None):
     goals=goals or {}
     output=BytesIO();doc=SimpleDocTemplate(output,pagesize=landscape(A4),rightMargin=30,leftMargin=30)
     styles=getSampleStyleSheet();story=[]
@@ -85,23 +85,23 @@ def pdf_report(month,rows,prices,contract,closed,goals=None):
             ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.whitesmoke,colors.white]),
             ('GRID',(0,0),(-1,-1),.3,colors.lightgrey),('BOTTOMPADDING',(0,0),(-1,-1),7)]));return t
     story += [Paragraph('Fechamento mensal de leitura de hidrômetros',styles['Title']),paragraph(f"{contract.get('name') or 'Contrato não informado'} | Referência {month} | {'Fechado' if closed else 'PRÉVIA'}"),Spacer(1,14)]
-    summary=summarize(rows,prices)
+    summary=summary_data if summary_data is not None else summarize(rows,prices)
     story.append(table([['Código','Serviço','Quantidade','Unitário','Total']]+[[r['Código'],r['Categoria'],r['Quantidade'],money(r['unit_cents']),money(r['total_cents'])] for r in summary]))
-    story += [Spacer(1,14),Paragraph('Total: '+money(sum(r['total_cents'] for r in summary)),styles['Heading1']),paragraph(f"Registros importados: {len(rows)}. Excluídos: {sum(bool(r['excluded']) for r in rows)}. As unidades dos adicionais não representam leituras adicionais."),Spacer(1,12)]
+    story += [Spacer(1,14),Paragraph('Total: '+money(sum(r['total_cents'] for r in summary)),styles['Heading1']),paragraph(f"Registros importados: {record_count if record_count is not None else len(rows)}. Excluídos: {excluded_count if excluded_count is not None else sum(bool(r['excluded']) for r in rows)}. As unidades dos adicionais não representam leituras adicionais."),Spacer(1,12)]
     chart=VerticalBarChart();chart.x=40;chart.y=40;chart.width=620;chart.height=125
     chart.data=[[r['Quantidade'] for r in summary]];chart.categoryAxis.categoryNames=['R$ 1,38','R$ 1,28','R$ 1,37','Impressão','Apontamento'];chart.valueAxis.valueMin=0;chart.bars[0].fillColor=colors.HexColor('#147D92')
     d=Drawing(740,195);d.add(chart);story.append(d)
     for by in ('employee','city','group'):
         title={'employee':'Produtividade por funcionário','city':'Produtividade por unidade / cidade (ATC)','group':'Produtividade por grupo'}[by]
         story.extend([PageBreak(),Paragraph(title,styles['Heading1'])])
-        entries=productivity(rows,prices,by)
+        entries=productivity_data[by] if productivity_data is not None else productivity(rows,prices,by)
         story.append(table([[{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],'Registros','Leituras','Comunicados','Apontamentos','Valor']]+[[paragraph(next(iter(r.values()))),r['Registros'],r['Leituras faturáveis'],r['Comunicados'],r['Apontamentos'],money(r['total_cents'])] for r in entries]))
     story.extend([PageBreak(),Paragraph('Metas mensais informadas',styles['Heading1'])])
     goal_rows=[]
     for by in ('employee','city','group'):
-        for r in productivity(rows,prices,by):
+        for r in (productivity_data[by] if productivity_data is not None else productivity(rows,prices,by)):
             name=next(iter(r.values()));goal=goals.get(by+'|'+name)
             if goal:goal_rows.append([{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],paragraph(name),r['Leituras faturáveis'],goal,f"{100*r['Leituras faturáveis']/goal:.1f}%"])
     story.append(table([['Dimensão','Funcionário / ATC','Leituras','Meta','Atingimento']]+goal_rows) if goal_rows else paragraph('Nenhuma meta mensal informada. Metas não são presumidas.'))
-    story += [Spacer(1,12),paragraph('Regras: fatura retida não gera serviço de leitura. Causa preenchida gera a categoria R$ 1,37; causa vazia é separada por fatura impressa. Adicionais em todos os registros. CO1 Atual preenchido gera um apontamento, inclusive códigos de vistoria, sem cobrança do serviço de vistoria. Registros sem data e releituras incluídos. O Excel contém a conferência detalhada e os dados importados; originais preservados separadamente.')]
+    story += [Spacer(1,12),paragraph('Regras: fatura retida não gera serviço de leitura. Causa preenchida gera a categoria R$ 1,37; causa vazia é separada por fatura impressa. Adicionais em todos os registros. CO1 Atual preenchido gera um apontamento, inclusive códigos de vistoria, sem cobrança do serviço de vistoria. Registros sem data e releituras incluídos. O Excel completo opcional contém a conferência detalhada e os dados importados; originais preservados separadamente.')]
     doc.build(story);return output.getvalue()
