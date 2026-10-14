@@ -14,14 +14,14 @@ class HolidayTests(unittest.TestCase):
     def tearDown(self):
         storage.DATA=self.old;self.temp.cleanup()
 
-    def add(self,day='12/10/2026',city='Origem A',printed='Sim',retained='Não',cause='',supply='TESTE-1',task='EXECUCAO-1',note=''):
+    def add(self,day='12/10/2026',city='Origem A',printed='Sim',retained='Não',cause='',supply='TESTE-1',task='EXECUCAO-1',note='',month='2026-10'):
         raw={v:'' for v in core.FIELDS.values()}
         raw.update({'Data da Leitura Atual':day,'ATC':city,'Faturas Impressas':printed,'Fatura Retida':retained,
                     'Causas de Leitura/Não Leitura Atual':cause,'Quantidade comunicados impressos':2,'CO1 Atual':'Teste',
                     'Codigo do Fornecimento':supply,'Tarefa':task,'Nome do TACE':'Funcionário de teste','Grupo':'Grupo de teste','Observação de teste':note})
         w=openpyxl.Workbook();s=w.active;s.append(list(raw));s.append(list(raw.values()));out=BytesIO();w.save(out)
-        p=core.parse_excel(out.getvalue())[0];storage.import_sheet(out.getvalue(),'fixture.xlsx',p,p['mapping'],'2026-10')
-        return storage.imports('2026-10')[-1]['id']
+        p=core.parse_excel(out.getvalue())[0];storage.import_sheet(out.getvalue(),'fixture.xlsx',p,p['mapping'],month)
+        return storage.imports(month)[-1]['id']
 
     def qty(self):return holidays.overview('2026-10')['holiday_quantity']
 

@@ -88,6 +88,8 @@ class ImportActions(unittest.TestCase):
             old.execute('DROP TABLE cache_revision')
             for table in ('holidays','municipality_bindings','holiday_identity_records','holiday_freeze','holiday_frozen_records','holiday_frozen_review'):
                 old.execute('DROP TABLE '+table)
+            for table in ('automatic_localities','import_brazil_proofs'):
+                old.execute('DROP TABLE '+table)
             for index in ('records_import','records_month_id','audit_month'):
                 old.execute('DROP INDEX '+index)
             old.execute('DROP INDEX active_fingerprints')

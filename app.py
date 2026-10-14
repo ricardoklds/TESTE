@@ -11,6 +11,7 @@ import cached_queries as cached
 import excel_io
 import fast_reports
 import holidays
+import localities
 from exports import money, productivity, excel_report, pdf_report
 
 st.set_page_config(page_title='Gestão de Medição | Fechamento',page_icon='💧',layout='wide')
@@ -170,12 +171,25 @@ elif page=='Importar planilhas':
                 st.session_state.pop('import_action',None);st.rerun()
         with st.expander('Histórico de exclusões e restaurações'):
             st.dataframe(pd.DataFrame([r for r in storage.audit(month) if r['action'] in ('Excluir importação','Restaurar importação')]),hide_index=True)
+        st.subheader('Comprovação de execução no Brasil')
+        st.caption('Use apenas quando o arquivo tiver comprovação documental brasileira e não for possível resolver cada município. A comprovação habilita somente feriados nacionais; não preenche município ou UF. Não confirme apenas por haver um prefixo ATC desconhecido.')
+        entries=storage.imports(month)
+        if entries:
+            with st.form('brazil_execution_proof'):
+                selected_id=st.selectbox('Importação com execução comprovada',[e['id'] for e in entries],format_func=lambda x:next(e['name']+' · '+e['sheet'] for e in entries if e['id']==x))
+                evidence=st.text_input('Referência ou descrição da evidência documental')
+                confirmed_brazil=st.checkbox('Conferi a documentação e confirmo que esta execução ocorreu no Brasil')
+                if st.form_submit_button('Registrar comprovação brasileira',disabled=bool(info['closed'])):
+                    if not confirmed_brazil:st.error('É necessária confirmação explícita baseada em documentação.')
+                    else:
+                        try:localities.prove_brazil(selected_id,evidence);st.session_state.pop('exports',None);st.rerun()
+                        except ValueError as e:st.error(str(e))
 
 elif page=='Fechamento mensal':
     metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
     if errors or conflicts:st.error(f'No mês completo: {errors} registros com erros e {conflicts} chaves repetidas. O filtro não oculta pendências para autorizar fechamento; resolva antes de fechar.')
     with st.expander('Conferência do adicional de feriado',expanded=True):
-        st.caption('R$ 1,05 por fornecimento/data/execução. Domingos e localidades não confirmadas não são cobrados automaticamente.')
+        st.caption('R$ 1,05 por fornecimento/data/execução. Nacional exige Brasil comprovado; estadual exige UF segura; municipal exige município e UF seguros. Domingos não são cobrados automaticamente.')
         st.write(f"Elegíveis cobrados: {stats['holiday_quantity']} · Pendências: {stats['holiday_pending']}")
         options=cached.holiday_options(cache_path,revision,month,start_arg,end_arg)
         hc=st.columns(3)
@@ -186,7 +200,7 @@ elif page=='Fechamento mensal':
         number=st.number_input('Página de feriados',min_value=1,max_value=max(1,(n+99)//100),value=1,step=1,key=f'holiday_page_{month}_{revision}_{start_arg}_{end_arg}_{town_filter}_{group_filter}_{employee_filter}')
         hrows=first_h if number==1 else cached.holiday_page(cache_path,revision,month,start_arg,end_arg,(number-1)*100,100,town_filter,group_filter,employee_filter)[1]
         st.caption(f'{n} registros na conferência do adicional.')
-        st.dataframe(pd.DataFrame(hrows).rename(columns={'day':'Data','municipality':'Município','state':'UF','employee':'Funcionário','group_name':'Grupo','city':'Cidade/ATC','supply':'Fornecimento','execution':'Execução','status':'Situação'}),hide_index=True,width='stretch')
+        st.dataframe(pd.DataFrame(hrows).rename(columns={'day':'Data','municipality':'Município','state':'UF','employee':'Funcionário','group_name':'Grupo','city':'Cidade/ATC','supply':'Fornecimento','execution':'Execução','status':'Situação','country':'País','location_evidence':'Comprovação da localidade'}),hide_index=True,width='stretch')
     st.subheader('Conferência dos registros')
     category=st.selectbox('Categoria',['Todos',*[core.CATEGORIES[k][1] for k in core.CATEGORIES]])
     mode=st.selectbox('Exibir',['Todos','Com erros','Com avisos','Chaves repetidas','Excluídos'])
@@ -326,7 +340,12 @@ elif page=='Configurações':
         remove=st.checkbox('Confirmo excluir este feriado do calendário')
         if st.button('Excluir feriado',disabled=not remove):
             holidays.delete(selected['id']);st.session_state.pop('exports',None);st.rerun()
-    st.subheader('Municípios e UFs confirmados')
+    st.subheader('Identificação automática de municípios e UFs')
+    st.caption('Correspondência exata por nomes/códigos IBGE, sem acentos e prefixo ATC; homônimos não recebem município/UF por suposição. Referência comunitária versionada e procedência em reference_data/PROVENANCE.md. Identificações manuais existentes têm prioridade.')
+    with storage.connect() as c:
+        automatic=[dict(r) for r in c.execute('SELECT * FROM automatic_localities ORDER BY source')]
+    st.dataframe(pd.DataFrame(automatic).rename(columns={'source':'Cidade/ATC original normalizada','municipality':'Município','state':'UF','country':'País','evidence':'Referência'}),hide_index=True)
+    st.subheader('Municípios e UFs confirmados manualmente')
     st.caption('Associe a origem da coluna de cidade/ATC ao município real do fornecimento. Não use uma ATC que reúna municípios diferentes; esses registros devem permanecer pendentes até uma importação com coluna municipal segura.')
     with storage.connect() as c:
         bindings=[dict(r) for r in c.execute('SELECT * FROM municipality_bindings ORDER BY source')]

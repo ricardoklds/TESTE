@@ -44,6 +44,8 @@ def connect():
         prepare(c,DATA)
         from holidays import prepare as prepare_holidays
         prepare_holidays(c,DATA)
+        from localities import prepare as prepare_localities
+        prepare_localities(c,DATA)
         return c
     c.executescript('''
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -58,6 +60,8 @@ def connect():
     prepare(c,DATA)
     from holidays import prepare as prepare_holidays
     prepare_holidays(c,DATA)
+    from localities import prepare as prepare_localities
+    prepare_localities(c,DATA)
     return c
 
 def ensure_open(c, month):

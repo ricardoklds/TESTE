@@ -12,7 +12,12 @@ UFS={'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB',
 def identity(raw,mapping):
     r=json.loads(raw);m=json.loads(mapping)
     get=lambda k:r.get(m.get(k))
-    return json.dumps([str(get('supply') or '').strip(),str(get('task') or '').strip(),core.norm(get('city')),
+    city=get('city')
+    if not m.get('city'):
+        aliases={'cidade/atc','cidade / atc','atc','cidade','municipio'}
+        values={core.norm(value) for key,value in r.items() if core.norm(key) in aliases and core.norm(value)}
+        city=next(iter(values)) if len(values)==1 else ('__colunas_municipais_divergentes__' if values else '')
+    return json.dumps([str(get('supply') or '').strip(),str(get('task') or '').strip(),core.norm(city),
                        int(core.norm(get('retained'))=='nao' and not core.norm(get('cause')))],ensure_ascii=False)
 
 def prepare(c,data):
@@ -91,17 +96,29 @@ def bind(source,municipality,state):
 def candidate_sql(month,start=None,end=None,omit_id=None,restore_id=None):
     args=[month];period=''
     if start is not None:period=' AND m.day BETWEEN ? AND ?';args.extend([start,end])
-    sql='''SELECT m.id,m.day,m.employee,m.city,m.group_name,p.supply,p.execution,b.municipality,b.state,
-        CASE WHEN strftime('%w',m.day)='0' THEN 'Domingo: conferir'
-             WHEN b.source IS NULL THEN 'Município/UF não confirmado'
-             WHEN p.supply='' OR p.execution='' THEN 'Fornecimento/execução ausente'
-             WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND
-                 (h.scope='Nacional' OR (h.state=b.state AND (h.scope='Estadual' OR h.municipality=b.municipality)))) THEN 'Elegível'
-             ELSE 'Não aplicável' END status
+    sql="""WITH resolved AS (
+        SELECT m.*,p.supply,p.execution,p.eligible,
+          COALESCE(NULLIF(b.municipality,''),NULLIF(a.municipality,''),'') municipality,
+          COALESCE(NULLIF(b.state,''),NULLIF(a.state,''),'') state,
+          CASE WHEN b.source IS NOT NULL OR proof.import_id IS NOT NULL THEN 'BR' ELSE COALESCE(a.country,'') END country,
+          CASE WHEN b.source IS NOT NULL THEN 'Identificação manual confirmada'
+               WHEN proof.import_id IS NOT NULL THEN 'Execução no Brasil comprovada: '||proof.evidence ELSE a.evidence END location_evidence
         FROM record_metrics m JOIN holiday_identity_records p ON p.id=m.id
         LEFT JOIN municipality_bindings b ON b.source=p.source
-        WHERE m.month=? AND m.excluded=0 AND m.import_deleted=0 AND m.day IS NOT NULL
-          AND ((p.eligible=1 AND EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day)) OR strftime('%w',m.day)='0')'''+period
+        LEFT JOIN automatic_localities a ON a.source=p.source
+        LEFT JOIN import_brazil_proofs proof ON proof.import_id=m.import_id
+    ) SELECT m.id,m.day,m.employee,m.city,m.group_name,m.supply,m.execution,m.municipality,m.state,m.country,m.location_evidence,
+      CASE WHEN strftime('%w',m.day)='0' THEN 'Domingo: conferir'
+           WHEN m.supply='' OR m.execution='' THEN 'Fornecimento/execução ausente'
+           WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND
+             ((h.scope='Nacional' AND m.country='BR') OR (h.scope='Estadual' AND m.state<>'' AND h.state=m.state)
+              OR (h.scope='Municipal' AND m.state<>'' AND m.municipality<>'' AND h.state=m.state AND h.municipality=m.municipality))) THEN 'Elegível'
+           WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Nacional') AND m.country<>'BR' THEN 'Execução no Brasil não comprovada'
+           WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Estadual') AND m.state='' THEN 'UF não confirmada'
+           WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Municipal') AND (m.state='' OR m.municipality='') THEN 'Município/UF não confirmado'
+           ELSE 'Não aplicável' END status
+      FROM resolved m WHERE m.month=? AND m.excluded=0 AND m.import_deleted=0 AND m.day IS NOT NULL
+        AND ((m.eligible=1 AND EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day)) OR strftime('%w',m.day)='0')"""+period
     if omit_id is not None:sql+=' AND m.import_id<>?';args.append(omit_id)
     if restore_id is not None:
         sql=sql.replace('m.import_deleted=0','(m.import_deleted=0 OR m.import_id=?)')
@@ -130,7 +147,7 @@ def overview(month,start=None,end=None):
         frozen_period=" AND json_extract(detail,'$.day') BETWEEN ? AND ?" if start is not None else ''
         stats=c.execute('SELECT status,COUNT(*) n FROM ('+sql+') GROUP BY status',args).fetchall() if not frozen else c.execute("SELECT json_extract(detail,'$.status') status,COUNT(*) n FROM holiday_frozen_review WHERE month=?"+frozen_period+' GROUP BY status',[month,*([start,end] if start is not None else [])]).fetchall()
         divergent=c.execute("SELECT COALESCE(SUM(n),0) FROM (SELECT COUNT(*) n FROM ("+sql+") WHERE status='Elegível' GROUP BY supply,day,execution HAVING COUNT(DISTINCT municipality||'/'||state)>1)",args).fetchone()[0] if not frozen else 0
-    pending=divergent+sum(r['n'] for r in stats if r['status'] in ('Município/UF não confirmado','Fornecimento/execução ausente','Domingo: conferir'))
+    pending=divergent+sum(r['n'] for r in stats if r['status'] in ('Município/UF não confirmado','UF não confirmada','Execução no Brasil não comprovada','Fornecimento/execução ausente','Domingo: conferir'))
     return {'holiday_quantity':quantity,'holiday_pending':pending}
 
 def productivity(month,by,start=None,end=None):

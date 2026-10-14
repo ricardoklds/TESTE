@@ -22,6 +22,9 @@ def inspect(content):
             if headers:
                 result.append({'sheet':sheet.title,'headers':headers,'header_row':header_row,'records':records,
                                'mapping':{k:next((h for h in headers if norm(h)==norm(v)),None) for k,v in FIELDS.items()}})
+                if not result[-1]['mapping']['city']:
+                    candidates=[h for h in headers if norm(h) in ('cidade/atc','cidade / atc','cidade','municipio')]
+                    if len(candidates)==1:result[-1]['mapping']['city']=candidates[0]
     finally:book.close()
     if not result:raise ValueError('Nenhum cabeçalho reconhecido.')
     return result
