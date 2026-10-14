@@ -1,6 +1,10 @@
 import streamlit as st
 import queries
 
+@st.cache_data(show_spinner=False,max_entries=64,ttl=600)
+def import_listing(path,revision,month,prices):
+    return queries.import_listing(month,prices)
+
 @st.cache_data(show_spinner=False,max_entries=128,ttl=600)
 def overview(path,revision,month,start=None,end=None):
     import holidays

@@ -87,7 +87,7 @@ def month_info(month):
         return {**dict(r), 'prices': json.loads(r['prices'])}
     return {'month': month, 'closed': 0, 'prices': settings().get('prices', {k: v[2] for k,v in CATEGORIES.items()})}
 
-def import_sheet(content, name, parsed, mapping, month):
+def import_sheet(content, name, parsed, mapping, month, on_progress=None):
     if any(not mapping.get(k) for k in ('printed','retained','cause','copies','operational')):
         raise ValueError('Mapeie as cinco colunas obrigatórias.')
     if len([v for v in mapping.values() if v]) != len(set(v for v in mapping.values() if v)):
@@ -124,8 +124,10 @@ def import_sheet(content, name, parsed, mapping, month):
             batch.append((month,cur.lastrowid,row['line'],fingerprint(raw),json.dumps(raw,ensure_ascii=False),json.dumps(result,ensure_ascii=False)))
             if len(batch)>=1000:
                 count=insert_batch(batch);added+=count;skipped+=len(batch)-count;batch=[]
+                if on_progress:on_progress(added+skipped,added,skipped)
         if batch:
             count=insert_batch(batch);added+=count;skipped+=len(batch)-count
+            if on_progress:on_progress(added+skipped,added,skipped)
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)',
             (month,'Importação',json.dumps({'arquivo':Path(name).name,'sha256':sha,'inseridos':added,'duplicados_ignorados':skipped}),now()))
     return added, skipped

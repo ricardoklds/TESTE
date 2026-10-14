@@ -127,15 +127,20 @@ elif page=='Importar planilhas':
         confirmed=st.checkbox(f'Confirmo o mapeamento e o mês {month}. Incluir sem data, releituras e adicionais em faturas retidas, conforme regras confirmadas.')
         if st.button('Processar e importar',type='primary',disabled=not confirmed or bool(info['closed'])):
             try:
-                with st.spinner('Preservando o original e processando os registros…'):added,skipped=storage.import_sheet(content,uploaded.name,{**p,'records':excel_io.iter_records(content,p)},mapping,month)
+                with st.status('Preservando o original e processando em lotes…') as status:
+                    progress=st.empty()
+                    def report_progress(processed,inserted,duplicates):
+                        progress.write(f'Linhas processadas: {processed:,} · Inseridas: {inserted:,} · Duplicatas ignoradas: {duplicates:,}. Aguardando conclusão da transação.')
+                    added,skipped=storage.import_sheet(content,uploaded.name,{**p,'records':excel_io.iter_records(content,p)},mapping,month,on_progress=report_progress)
+                    status.update(label='Importação confirmada no banco',state='complete')
                 st.session_state['import_message']=f'Importação concluída: {added} registros inseridos; {skipped} duplicatas idênticas ignoradas.'
                 st.session_state.pop('exports',None)
                 st.rerun()
             except Exception as e:st.error(str(e))
     with st.expander('Arquivos importados e originais',expanded=True):
         st.caption('Operações por aba/importação do mês selecionado. Excluir não apaga o original. Valores usam os preços atuais deste mês.')
-        for entry in storage.imports(month):
-            preview=cached.import_preview(cache_path,revision,month,entry['id'])
+        for entry in cached.import_listing(cache_path,revision,month,prices):
+            preview=entry
             st.write(f"**{entry['name']}** · {entry['sheet']} · {'Excluído' if entry['deleted'] else 'Ativo'}")
             st.caption(f"Importado em UTC: {entry['created_at']} · Mês: {month} · Registros vinculados: {preview['record_count']} · No fechamento: {preview['active_count']} · Faturamento: {money(preview['total_cents'])}")
             left,right=st.columns(2)
@@ -146,6 +151,7 @@ elif page=='Importar planilhas':
                 left.download_button('Baixar original intacto',st.session_state['original_bytes'],file_name=entry['name'],key=f"original_{entry['id']}")
             deleted=not bool(entry['deleted'])
             if right.button('Excluir importação' if deleted else 'Restaurar importação',key=f"action_import_{entry['id']}",disabled=bool(info['closed'])):
+                preview=cached.import_preview(cache_path,revision,month,entry['id'])
                 st.session_state['import_action']={'month':month,'id':entry['id'],'deleted':deleted,'preview':preview}
             st.divider()
         pending=st.session_state.get('import_action')

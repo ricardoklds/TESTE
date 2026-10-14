@@ -130,12 +130,33 @@ O benchmark consulta a base existente sem alterá-la, salvo a migração automá
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_periods.py -v
-.\.venv\Scripts\python.exe -m streamlit run app.py
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
 
-No Linux/macOS use `.venv/bin/python`. No primeiro início desta versão, o banco é migrado automaticamente após backup SQLite verificado em data/backups. Não é necessário reimportar planilhas. Meses fechados, histórico, preços, metas e originais existentes são reutilizados. Para bases grandes, execute apenas o teste unitário indicado nos passos de atualização; a suíte completa de integração depende da base original fornecida, não de qualquer banco do usuário.
+No Linux/macOS use `.venv/bin/python`. Bancos anteriores à versão 5 passam pelas migrações já existentes, após backup SQLite verificado em data/backups. A otimização atual não acrescenta migração. Não é necessário reimportar planilhas. Meses fechados, histórico, preços, metas e originais existentes são reutilizados. Para bases grandes, execute os testes isolados indicados nos passos de atualização; a suíte completa de integração depende da base original fornecida, não de qualquer banco do usuário.
 
 Para executar todos os testes: `python -m unittest discover -s tests -v` usando o Python da `.venv`. Os testes unitários usam fixtures isoladas, que nunca entram no sistema. Os testes de interface usam uma cópia temporária da base real de outubro/2026 e confirmam que banco e originais não mudam; sem essa base, são explicitamente ignorados. Para validar os cálculos originais com o XLSX fornecido, use validar_planilha.py como descrito abaixo.
+
+## Atualização de desempenho para grandes volumes
+
+A otimização para grandes volumes está descrita em [SCALE_PERFORMANCE.md](SCALE_PERFORMANCE.md).
+Para atualizar esta versão, siga [BACKUP_RECOVERY.md](BACKUP_RECOVERY.md). Ela mantém
+o banco na versão 5, sem nova migração e sem mudança de dependências. **Não reinstale
+Python, não reimporte dados e não substitua `data/` ou `.venv/`.** Copie também
+`reference_data/`, os módulos Python atualizados e `tests/`. Depois do backup externo,
+no PowerShell da instalação:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_optimization.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_holidays.py -v
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
+```
+
+Esses dois conjuntos usam apenas bancos sintéticos temporários, inclusive o teste
+de backup/recuperação. No navegador abra `http://localhost:8501`; use o menu lateral
+para acessar Painel inicial, Importar planilhas, Fechamento mensal, Produtividade,
+Relatórios e Configurações. Nesta versão, a importação informa linhas processadas,
+inseridas e duplicatas por lote; só confirma a operação ao terminar a transação.
 
 ## Validar com a planilha fornecida
 

@@ -5,10 +5,12 @@ import json
 import sqlite3
 from uuid import uuid4
 import core
+from functools import lru_cache
 
 UNIT=105
 UFS={'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'}
 
+@lru_cache(maxsize=32)
 def identity(raw,mapping):
     r=json.loads(raw);m=json.loads(mapping)
     get=lambda k:r.get(m.get(k))

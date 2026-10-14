@@ -15,8 +15,13 @@ EXECUTOR=ThreadPoolExecutor(max_workers=1)
 def text_row(sheet, values):
     cells=[]
     for value in values:
+        if not isinstance(value,str):
+            # Let the streaming writer skip empty cells and encode numbers directly.
+            # Keep positions (None), headers, and text protection against formulas.
+            cells.append(value)
+            continue
         cell=WriteOnlyCell(sheet,value=value)
-        if isinstance(value,str):cell.data_type='s'
+        cell.data_type='s'
         cells.append(cell)
     sheet.append(cells)
 

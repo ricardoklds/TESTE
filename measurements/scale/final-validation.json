@@ -1,0 +1,25 @@
+{
+  "production_files_byte_identical": true,
+  "files_checked": 7,
+  "cases": {
+    "20000": {
+      "financial_before_after_identical": true,
+      "synthetic": true
+    },
+    "100000": {
+      "financial_before_after_identical": true,
+      "synthetic": true
+    },
+    "500000": {
+      "financial_before_after_identical": true,
+      "synthetic": true
+    },
+    "1000000": {
+      "financial_before_after_identical": true,
+      "synthetic": true
+    }
+  },
+  "regression_tests_passed": 47,
+  "synthetic_input_files_sha256_preserved": 50,
+  "database_schema_migration_added": false
+}

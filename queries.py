@@ -22,21 +22,38 @@ def duplicates(month):
 
 def overview(month,start=None,end=None):
     condition,args=where(month,start,end)
-    valid=condition+' AND m.excluded=0 AND m.import_deleted=0'+(' AND m.errors=0' if start is not None else '')
+    eligible='m.excluded=0 AND m.import_deleted=0'+(' AND m.errors=0' if start is not None else '')
     with closing(storage.connect()) as c:
-        units=c.execute('SELECT '+','.join(f'COALESCE(SUM({v}),0) AS "{k}"' for k,v in COLS.items())+' FROM record_metrics m WHERE '+valid,args).fetchone()
-        stats=c.execute('''SELECT COUNT(*) total_records,COUNT(DISTINCT import_id) import_count,
+        combined=c.execute('''SELECT COUNT(*) total_records,COUNT(DISTINCT import_id) import_count,
             COALESCE(SUM(excluded<>0 OR import_deleted<>0),0) excluded_count,
             COALESCE(SUM(excluded=0 AND import_deleted=0),0) active_count,
             COALESCE(SUM(excluded=0 AND import_deleted=0 AND errors=0),0) valid_count,
-            COALESCE(SUM(excluded=0 AND import_deleted=0 AND errors>0),0) errors
-            FROM record_metrics m WHERE '''+condition,args).fetchone()
+            COALESCE(SUM(excluded=0 AND import_deleted=0 AND errors>0),0) errors,
+            '''+','.join(f'COALESCE(SUM(CASE WHEN {eligible} THEN {v} ELSE 0 END),0) AS "{k}"' for k,v in COLS.items())+
+            ' FROM record_metrics m WHERE '+condition,args).fetchone()
+        units={k:combined[k] for k in COLS}
+        stats={k:combined[k] for k in combined.keys() if k not in COLS}
         dup,dup_args=duplicates(month)
         extra=' AND day BETWEEN ? AND ?' if start is not None else ''
         conflicts=c.execute('SELECT COUNT(DISTINCT business_key) FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0 AND business_key IN ('+dup+')'+extra,
                             [month,*dup_args,*([start,end] if start is not None else [])]).fetchone()[0]
         undated=c.execute('SELECT COUNT(*) FROM record_metrics WHERE month=? AND day IS NULL',(month,)).fetchone()[0]
     return {**dict(stats),'units':dict(units),'conflicts':conflicts,'undated':undated}
+
+def import_listing(month,prices):
+    """Uma agregação para todos os arquivos; impacto de exclusão só na confirmação."""
+    import holidays
+    with closing(storage.connect()) as c:
+        charge_sql,args=holidays.charges_query(c,month)
+        holiday_counts={r['import_id']:r['n'] for r in c.execute(
+            'SELECT m.import_id,COUNT(*) n FROM ('+charge_sql+') h JOIN record_metrics m ON m.id=h.id GROUP BY m.import_id',args)}
+        sql='''SELECT i.*,COUNT(m.id) record_count,
+            COALESCE(SUM(m.excluded=0 AND m.import_deleted=0),0) active_count,'''+','.join(
+            f'COALESCE(SUM(CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.{v} ELSE 0 END),0) "{k}"'
+            for k,v in COLS.items())+''' FROM imports i LEFT JOIN record_metrics m ON m.import_id=i.id
+            WHERE i.month=? GROUP BY i.id ORDER BY i.id'''
+        return [{**dict(r),'total_cents':sum(r[k]*prices[k] for k in COLS)+105*holiday_counts.get(r['id'],0)}
+                for r in c.execute(sql,(month,))]
 
 def summary(stats,prices):
     result=[{'Código':code,'Categoria':label,'Quantidade':stats['units'][k],'unit_cents':prices[k],
