@@ -139,6 +139,11 @@ Para executar todos os testes: `python -m unittest discover -s tests -v` usando 
 
 ## Atualização de desempenho para grandes volumes
 
+A auditoria somente leitura de setembro está em
+[AUDITORIA_SETEMBRO_2026.md](AUDITORIA_SETEMBRO_2026.md). A ferramenta
+`auditoria_fechamento.py` exporta Excel/JSON/Markdown sem migrar, reimportar, alterar
+preços ou ajustar o fechamento. Execute com Streamlit fechado e saída fora de `data`.
+
 A conferência agora oferece filtro **Situação**, resumo por motivo e exportação de
 pendências. Veja [HOLIDAY_REVIEW.md](HOLIDAY_REVIEW.md) para usar e atualizar no
 Windows. Inclua o novo módulo `holiday_review.py`; não há nova migração ou dependência.
