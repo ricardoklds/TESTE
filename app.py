@@ -10,6 +10,7 @@ import queries
 import cached_queries as cached
 import excel_io
 import fast_reports
+import holidays
 from exports import money, productivity, excel_report, pdf_report
 
 st.set_page_config(page_title='Gestão de Medição | Fechamento',page_icon='💧',layout='wide')
@@ -74,7 +75,7 @@ def metrics():
     cols[0].metric('Faturamento do período' if page in period_pages else 'Faturamento mensal',money(total))
     cols[1].metric('Leituras faturáveis',f"{sum(r['Quantidade'] for r in summary if r['key'] in ('138','128','137')):,}".replace(',','.'))
     cols[2].metric('Registros válidos do período' if page in period_pages else 'Registros ativos',f'{stats["valid_count"] if page in period_pages else stats["active_count"]:,}'.replace(',','.'))
-    cols[3].metric('Pendências no período' if page in period_pages else 'Pendências',stats['errors']+stats['conflicts'])
+    cols[3].metric('Pendências no período' if page in period_pages else 'Pendências',stats['errors']+stats['conflicts']+stats.get('holiday_pending',0))
 
 def summary_frame():
     return pd.DataFrame([{'Código':r['Código'],'Serviço':r['Categoria'],'Quantidade':r['Quantidade'],'Valor unitário':money(r['unit_cents']),'Total':money(r['total_cents'])} for r in summary])
@@ -173,6 +174,19 @@ elif page=='Importar planilhas':
 elif page=='Fechamento mensal':
     metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
     if errors or conflicts:st.error(f'No mês completo: {errors} registros com erros e {conflicts} chaves repetidas. O filtro não oculta pendências para autorizar fechamento; resolva antes de fechar.')
+    with st.expander('Conferência do adicional de feriado',expanded=True):
+        st.caption('R$ 1,05 por fornecimento/data/execução. Domingos e localidades não confirmadas não são cobrados automaticamente.')
+        st.write(f"Elegíveis cobrados: {stats['holiday_quantity']} · Pendências: {stats['holiday_pending']}")
+        options=cached.holiday_options(cache_path,revision,month,start_arg,end_arg)
+        hc=st.columns(3)
+        town_filter=hc[0].selectbox('Município/UF do adicional',[None,*options['municipality']],format_func=lambda x:'Todos' if x is None else ('Não confirmado' if x=='/' else x))
+        group_filter=hc[1].selectbox('Grupo do adicional',[None,*options['group']],format_func=lambda x:'Todos' if x is None else x)
+        employee_filter=hc[2].selectbox('Funcionário do adicional',[None,*options['employee']],format_func=lambda x:'Todos' if x is None else x)
+        n,first_h=cached.holiday_page(cache_path,revision,month,start_arg,end_arg,0,100,town_filter,group_filter,employee_filter)
+        number=st.number_input('Página de feriados',min_value=1,max_value=max(1,(n+99)//100),value=1,step=1,key=f'holiday_page_{month}_{revision}_{start_arg}_{end_arg}_{town_filter}_{group_filter}_{employee_filter}')
+        hrows=first_h if number==1 else cached.holiday_page(cache_path,revision,month,start_arg,end_arg,(number-1)*100,100,town_filter,group_filter,employee_filter)[1]
+        st.caption(f'{n} registros na conferência do adicional.')
+        st.dataframe(pd.DataFrame(hrows).rename(columns={'day':'Data','municipality':'Município','state':'UF','employee':'Funcionário','group_name':'Grupo','city':'Cidade/ATC','supply':'Fornecimento','execution':'Execução','status':'Situação'}),hide_index=True,width='stretch')
     st.subheader('Conferência dos registros')
     category=st.selectbox('Categoria',['Todos',*[core.CATEGORIES[k][1] for k in core.CATEGORIES]])
     mode=st.selectbox('Exibir',['Todos','Com erros','Com avisos','Chaves repetidas','Excluídos'])
@@ -293,6 +307,42 @@ elif page=='Configurações':
             storage.save_setting('prices',new)
             if apply and monthly["total_records"] and not info['closed']:storage.update_month_prices(month,new)
             st.session_state.pop('exports',None);st.success('Preços salvos. Meses fechados mantêm seus valores.');st.rerun()
+    st.subheader('Calendário de Feriados')
+    st.caption('Nenhum feriado é presumido. Datas cadastradas são exatas, sem recorrência automática. Meses fechados mantêm o adicional congelado; reabra para aplicar alterações.')
+    calendar=holidays.calendar()
+    st.dataframe(pd.DataFrame(calendar),hide_index=True,width='stretch')
+    chosen=st.selectbox('Cadastrar ou editar feriado',['Novo',*[str(h['id'])+' · '+h['day']+' · '+h['description'] for h in calendar]])
+    selected=None if chosen=='Novo' else next(h for h in calendar if h['id']==int(chosen.split(' · ')[0]))
+    with st.form('holiday_calendar'):
+        hdate=st.date_input('Data do feriado',value=date.fromisoformat(selected['day']) if selected else reference)
+        description=st.text_input('Descrição do feriado',value=selected['description'] if selected else '')
+        scope=st.selectbox('Abrangência',['Nacional','Estadual','Municipal'],index=['Nacional','Estadual','Municipal'].index(selected['scope']) if selected else 0)
+        state=st.text_input('UF do feriado (estadual/municipal)',value=selected['state'] if selected else '')
+        town=st.text_input('Município do feriado (municipal)',value=selected['municipality'] if selected else '')
+        if st.form_submit_button('Salvar feriado'):
+            try:holidays.save(hdate.isoformat(),description,scope,state,town,selected['id'] if selected else None);st.session_state.pop('exports',None);st.rerun()
+            except ValueError as e:st.error(str(e))
+    if selected:
+        remove=st.checkbox('Confirmo excluir este feriado do calendário')
+        if st.button('Excluir feriado',disabled=not remove):
+            holidays.delete(selected['id']);st.session_state.pop('exports',None);st.rerun()
+    st.subheader('Municípios e UFs confirmados')
+    st.caption('Associe a origem da coluna de cidade/ATC ao município real do fornecimento. Não use uma ATC que reúna municípios diferentes; esses registros devem permanecer pendentes até uma importação com coluna municipal segura.')
+    with storage.connect() as c:
+        bindings=[dict(r) for r in c.execute('SELECT * FROM municipality_bindings ORDER BY source')]
+        sources=[r[0] for r in c.execute("SELECT DISTINCT source FROM holiday_identity_records WHERE source<>'' ORDER BY source")]
+    st.dataframe(pd.DataFrame(bindings),hide_index=True)
+    if sources:
+        with st.form('municipality_binding'):
+            source=st.selectbox('Origem cidade/ATC na planilha',sources)
+            municipality=st.text_input('Município confirmado')
+            uf=st.text_input('UF confirmada')
+            approved=st.checkbox('Confirmo que esta origem identifica exclusivamente este município e UF')
+            if st.form_submit_button('Salvar identificação municipal'):
+                if not approved:st.error('É necessária confirmação explícita da localidade.')
+                else:
+                    try:holidays.bind(source,municipality,uf);st.session_state.pop('exports',None);st.rerun()
+                    except ValueError as e:st.error(str(e))
     st.subheader('Regras confirmadas')
     st.markdown('''- R$ 1,38: impressa Sim, retida Não e causa vazia.
 - R$ 1,28: impressa Não, retida Não e causa vazia.
@@ -300,6 +350,7 @@ elif page=='Configurações':
 - Impressão: soma de Quantidade comunicados impressos × preço.
 - Apontamento: cada CO1 Atual preenchido × preço, inclusive códigos de vistoria.
 - Adicionais em todos os registros; registros sem data e releituras incluídos.
-- Serviços de vistoria, feriado e demais itens de contrato não são faturados nesta versão.
+- Adicional de feriado 200014097: R$ 1,05, calendário/localidade confirmados, retida Não, causa vazia, sem filtro de impressão e sem domingos.
+- Serviços de vistoria e demais itens de contrato não são faturados nesta versão.
 - Arquivos idênticos não são reimportados no mesmo mês; linhas idênticas são ignoradas. Chaves fornecimento + data + tarefa repetidas exigem conferência antes de fechar.''')
     st.info('Faça backup de toda a pasta data com o sistema parado: ela contém o banco e os arquivos originais. Esta versão é local; não possui autenticação para exposição pública.')

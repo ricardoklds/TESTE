@@ -65,3 +65,9 @@ O Excel completo conserva todas as colunas e é gerado em segundo plano com snap
 Use o Python da .venv: `python benchmark.py --output benchmark-local.json`. Para fixture isolada, `python benchmark.py --load 400000 --output benchmark-400000.json`. A opção de carga exige a base modelo de outubro/2026 e espaço livre. O benchmark de consulta aceita o mês de outubro/2026, que foi o mês usado nas medições. Consulte README para atualizar o código sem reinstalar Python.
 
 Testes: `python -m unittest discover -s tests -v`. As integrações dependem da base original fornecida; fixtures financeiras nunca são adicionadas à base de produção. Há testes de igualdade por categoria/período, produtividade, paginação, revisão do cache, restauração, rollback após lote parcial, exportação completa e navegação sem leitura integral.
+
+## Atualização com calendário de feriados
+
+Medição adicional na base REAL de 19.668 registros, com calendário vazio e adicional zero: Importar planilhas 0,1089 s; Fechamento mensal 0,0950 s; Produtividade 0,0768 s; Relatórios 0,0470 s; filtro diário 0,0923 s. Arquivo bruto: measurements/performance-holiday-base.json. São tempos de servidor/AppTest, sem garantia de latência no computador do usuário. Não foi refeita a carga de 400 mil com feriados aplicáveis; os valores anteriores de 400 mil são da versão anterior.
+
+A migração v4 foi verificada preservando registros, metadados, preços e hashes dos originais. Os cinco cálculos reais seguem somando R$ 30.454,12. Testes de calendários são cenários artificiais em bancos temporários, não apuração real de feriados da empresa.

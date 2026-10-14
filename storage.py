@@ -42,6 +42,8 @@ def connect():
     if existing:
         from perf_schema import prepare
         prepare(c,DATA)
+        from holidays import prepare as prepare_holidays
+        prepare_holidays(c,DATA)
         return c
     c.executescript('''
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -54,6 +56,8 @@ def connect():
     c.execute('PRAGMA user_version=2')
     from perf_schema import prepare
     prepare(c,DATA)
+    from holidays import prepare as prepare_holidays
+    prepare_holidays(c,DATA)
     return c
 
 def ensure_open(c, month):
@@ -160,6 +164,8 @@ def close_month(month, closed=True, reason=''):
         duplicate=c.execute('SELECT 1 FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0 AND business_key IS NOT NULL GROUP BY business_key HAVING COUNT(*)>1 LIMIT 1',(month,)).fetchone()
         if closed and (not status['active'] or status['errors'] or duplicate):
             raise ValueError('Resolva os erros e chaves repetidas antes de fechar; o mês precisa ter registros ativos.')
+        from holidays import freeze
+        freeze(c,month,closed)
         c.execute('UPDATE months SET closed=?,closed_at=? WHERE month=?', (int(closed),now() if closed else None,month))
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)', (month,'Fechamento' if closed else 'Reabertura',reason,now()))
 
@@ -188,11 +194,13 @@ def import_preview(month, import_id, connection=None):
             COALESCE(SUM(CASE WHEN excluded=0 THEN uop ELSE 0 END),0) apontamento
             FROM record_metrics WHERE import_id=? AND month=?''',(import_id,month)).fetchone()
         potential=sum(stats[k]*prices[k] for k in CATEGORIES)
+        from holidays import import_impact
+        owned_holiday,holiday_delta=import_impact(c,month,import_id,bool(entry['deleted']))
         # Detect any change between confirmation and commit, including prices or row decisions.
         version=fingerprint({'entry':dict(entry),'month':dict(month_row),'revision':c.execute('SELECT revision FROM cache_revision WHERE id=1').fetchone()[0]})
         return {**dict(entry),'record_count':stats['records'],'active_count':0 if entry['deleted'] else stats['billable'],
-                'potential_count':stats['billable'],'total_cents':0 if entry['deleted'] else potential,
-                'potential_cents':potential,'version':version}
+                'potential_count':stats['billable'],'total_cents':0 if entry['deleted'] else potential+owned_holiday,
+                'potential_cents':potential+holiday_delta,'version':version}
     finally:
         if connection is None:c.close()
 

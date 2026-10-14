@@ -70,6 +70,26 @@ A atualização migra automaticamente o banco para versão 2 no primeiro início
 
 ## Filtros de data
 
+## Calendário e adicional de leitura em feriado
+
+Em Configurações, cadastre datas exatas, descrição e abrangência Nacional, Estadual (UF) ou Municipal (município e UF). Não há calendário presumido, preenchimento automático ou repetição anual: informe apenas feriados confirmados do contrato. Um mesmo dia/local/abrangência não pode ser cadastrado duas vezes. Sobreposições nacional/estadual/municipal não multiplicam o adicional.
+
+Na seção Municípios e UFs confirmados, associe cada origem da coluna cidade/ATC a um único município e UF, marcando a confirmação explícita. Não confirme unidades que abrangem mais de um município. Nesses casos, a importação precisa mapear uma coluna municipal segura; os registros antigos continuam pendentes. Nenhum município é inferido do endereço ou de nomes de ATC. Isso é necessário inclusive para a apuração de feriados nacionais.
+
+O serviço 200014097 é adicional de R$ 1,05 por fornecimento/data/execução elegível: Data da Leitura Atual em feriado aplicável, Fatura Retida Não e causa vazia (espaços isolados são vazios), sem qualquer filtro de Faturas Impressas. Fornecimento e execução usam as colunas mapeadas Codigo do Fornecimento e Tarefa. Identificadores ausentes ficam pendentes. Uma execução duplicada recebe o adicional uma vez, na primeira linha ativa elegível. Se houver municípios divergentes na mesma execução, nenhuma linha recebe automaticamente o adicional e a divergência fica pendente.
+
+Domingos são sinalizados e nunca cobrados automaticamente como feriado, inclusive registros com fatura retida. A leitura normal e os cinco cálculos antigos permanecem intactos. Serviços de vistoria não foram incluídos. Registros sem data não recebem adicional nem uma data fictícia; continuam no acumulado original.
+
+O adicional aparece como sexta linha no painel/fechamento e nos relatórios Excel/PDF, sem substituir as cinco linhas originais. Conferência paginada em Fechamento mensal permite filtrar data (período), município/UF, grupo e funcionário. Exclusão/restauração de importações, decisões individuais e mudanças de calendário/localidade invalidam o cache e recalculam somente meses abertos. O impacto de exclusão/restauração considera eventual transferência do adicional entre linhas duplicadas de uma execução.
+
+Fechar o mês congela a apuração do adicional e a conferência, incluindo registros pendentes sem cobrança. Pendências são mostradas para revisão antes da confirmação explícita do fechamento. Alterações futuras do calendário/localidade não modificam meses fechados; reabra o mês para recalcular. Meses já fechados antes desta atualização são preservados com adicional zero, sem faturamento retroativo automático.
+
+No primeiro início, a migração v4 cria e verifica backup em data/backups/antes-migracao-v4-*.sqlite3 antes de alterar a estrutura. Registros, resultados originais, preços, histórico e backups anteriores são preservados. Atualize pelo ZIP, preservando data e .venv, sem reinstalar Python. Os módulos novos holidays.py e tests/test_holidays.py devem ser copiados também.
+
+Testes de feriados usam cenários artificiais exclusivamente em bancos temporários; nenhum feriado fictício é cadastrado na instalação. Sem calendário e localidades confirmados, o adicional da base real permanece zero. As cinco categorias antigas continuam totalizando R$ 30.454,12 na planilha real fornecida. Resultados de desempenho em PERFORMANCE.md referem-se à versão anterior ao calendário; não devem ser tratados como medição do calendário em 400 mil leituras.
+
+### Visualização por período
+
 Painel inicial, Fechamento mensal e Produtividade oferecem **Mês completo**, **Dia específico** e **Intervalo personalizado**. Escolha primeiro o mês de referência na lateral. O intervalo é dentro desse mês e inclui as datas inicial e final. O filtro usa a coluna Data da Leitura Atual com o mapeamento confirmado na importação, inclusive para bases já existentes; não precisa reimportar arquivos.
 
 Indicadores, categorias, gráficos e rankings usam apenas registros não excluídos, sem erros e com data válida dentro do período. Registros com erros e excluídos continuam disponíveis na conferência do período. Duplicidades são identificadas no mês inteiro, mesmo quando um dos registros não está no período mostrado. Pendências mensais continuam bloqueando o fechamento.

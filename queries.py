@@ -39,8 +39,12 @@ def overview(month,start=None,end=None):
     return {**dict(stats),'units':dict(units),'conflicts':conflicts,'undated':undated}
 
 def summary(stats,prices):
-    return [{'Código':code,'Categoria':label,'Quantidade':stats['units'][k],'unit_cents':prices[k],
+    result=[{'Código':code,'Categoria':label,'Quantidade':stats['units'][k],'unit_cents':prices[k],
              'total_cents':stats['units'][k]*prices[k],'key':k} for k,(code,label,_) in core.CATEGORIES.items()]
+    if 'holiday_quantity' in stats:
+        result.append({'Código':'200014097','Categoria':'Adicional de leitura em feriado','Quantidade':stats['holiday_quantity'],
+                       'unit_cents':105,'total_cents':stats['holiday_quantity']*105,'key':'feriado'})
+    return result
 
 def productivity(month,prices,by,start=None,end=None):
     column={'employee':'employee','city':'city','group':'group_name'}[by]

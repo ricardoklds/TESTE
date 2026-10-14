@@ -89,13 +89,13 @@ def pdf_report(month,rows,prices,contract,closed,goals=None,summary_data=None,pr
     story.append(table([['Código','Serviço','Quantidade','Unitário','Total']]+[[r['Código'],r['Categoria'],r['Quantidade'],money(r['unit_cents']),money(r['total_cents'])] for r in summary]))
     story += [Spacer(1,14),Paragraph('Total: '+money(sum(r['total_cents'] for r in summary)),styles['Heading1']),paragraph(f"Registros importados: {record_count if record_count is not None else len(rows)}. Excluídos: {excluded_count if excluded_count is not None else sum(bool(r['excluded']) for r in rows)}. As unidades dos adicionais não representam leituras adicionais."),Spacer(1,12)]
     chart=VerticalBarChart();chart.x=40;chart.y=40;chart.width=620;chart.height=125
-    chart.data=[[r['Quantidade'] for r in summary]];chart.categoryAxis.categoryNames=['R$ 1,38','R$ 1,28','R$ 1,37','Impressão','Apontamento'];chart.valueAxis.valueMin=0;chart.bars[0].fillColor=colors.HexColor('#147D92')
+    chart.data=[[r['Quantidade'] for r in summary]];chart.categoryAxis.categoryNames=[('Feriado' if r['key']=='feriado' else r['Categoria'][:20]) for r in summary];chart.valueAxis.valueMin=0;chart.bars[0].fillColor=colors.HexColor('#147D92')
     d=Drawing(740,195);d.add(chart);story.append(d)
     for by in ('employee','city','group'):
         title={'employee':'Produtividade por funcionário','city':'Produtividade por unidade / cidade (ATC)','group':'Produtividade por grupo'}[by]
         story.extend([PageBreak(),Paragraph(title,styles['Heading1'])])
         entries=productivity_data[by] if productivity_data is not None else productivity(rows,prices,by)
-        story.append(table([[{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],'Registros','Leituras','Comunicados','Apontamentos','Valor']]+[[paragraph(next(iter(r.values()))),r['Registros'],r['Leituras faturáveis'],r['Comunicados'],r['Apontamentos'],money(r['total_cents'])] for r in entries]))
+        story.append(table([[{'employee':'Funcionário','city':'ATC','group':'Grupo'}[by],'Registros','Leituras','Comunicados','Apontamentos','Feriados','Valor']]+[[paragraph(next(iter(r.values()))),r['Registros'],r['Leituras faturáveis'],r['Comunicados'],r['Apontamentos'],r.get('Feriados',0),money(r['total_cents'])] for r in entries]))
     story.extend([PageBreak(),Paragraph('Metas mensais informadas',styles['Heading1'])])
     goal_rows=[]
     for by in ('employee','city','group'):

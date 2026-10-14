@@ -86,6 +86,8 @@ class ImportActions(unittest.TestCase):
                 old.execute('DROP TRIGGER "'+name+'"')
             old.execute('DROP TABLE record_metrics')
             old.execute('DROP TABLE cache_revision')
+            for table in ('holidays','municipality_bindings','holiday_identity_records','holiday_freeze','holiday_frozen_records','holiday_frozen_review'):
+                old.execute('DROP TABLE '+table)
             for index in ('records_import','records_month_id','audit_month'):
                 old.execute('DROP INDEX '+index)
             old.execute('DROP INDEX active_fingerprints')
