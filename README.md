@@ -143,6 +143,11 @@ A conferência agora oferece filtro **Situação**, resumo por motivo e exporta�
 pendências. Veja [HOLIDAY_REVIEW.md](HOLIDAY_REVIEW.md) para usar e atualizar no
 Windows. Inclua o novo módulo `holiday_review.py`; não há nova migração ou dependência.
 
+A correção **ATC BOCAINA → Bocaina/SP** e da classificação **Não aplicável — outro
+município** está em [BOCAINA_CORRECTION.md](BOCAINA_CORRECTION.md), com instruções
+Windows e verificador local somente leitura para a base de setembro. Copie também
+`municipal_review.py`, `validar_bocaina_local.py` e a confirmação em `reference_data/`.
+
 A otimização para grandes volumes está descrita em [SCALE_PERFORMANCE.md](SCALE_PERFORMANCE.md).
 Para atualizar esta versão, siga [BACKUP_RECOVERY.md](BACKUP_RECOVERY.md). Ela mantém
 o banco na versão 5, sem nova migração e sem mudança de dependências. **Não reinstale

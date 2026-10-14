@@ -213,7 +213,7 @@ elif page=='Fechamento mensal':
         reasons=cached.holiday_pending_summary(cache_path,revision,month,start_arg,end_arg,town_filter,group_filter,employee_filter)
         st.write(f"Pendências nos filtros de período/localidade/grupo/funcionário: {sum(r['Quantidade'] for r in reasons)}")
         st.dataframe(pd.DataFrame(reasons,columns=['Motivo','Quantidade']),hide_index=True,width='stretch')
-        st.caption('Não cobrados inclui pendências e duplicatas sem adicional. O resumo e o Excel contêm somente pendências, respeitando os filtros de período, município, grupo e funcionário. Meses fechados preservam a classificação de pendência do fechamento.')
+        st.caption('Não cobrados inclui pendências, duplicatas e leituras de outro município sem adicional. O resumo e o Excel contêm somente pendências, respeitando os filtros de período, município, grupo e funcionário. A conferência pode corrigir a classificação municipal de meses fechados, preservando os dados gravados e as cobranças congeladas.')
         export_key=(revision,month,start_arg,end_arg,town_filter,group_filter,employee_filter)
         job=st.session_state.get('holiday_pending_job')
         if st.button('Exportar pendências para Excel',disabled=not reasons or bool(job and not job[1].done())):

@@ -9,3 +9,9 @@ O CSV acessado tem 5.571 IDs únicos, apesar do README upstream citar 5.570. For
 Ausências/renomeações ficam pendentes, sem busca aproximada. Não se afirma que a lista é a relação oficial atual completa.
 
 SHA-256 de municipalities.json: 72e96f8c4044bdba30397231a7695a36c9f4134b984f954d5fd65b22675f1702
+
+Confirmação contratual de 14/10/2026: o usuário identificou ATC BOCAINA como Bocaina/SP.
+O código 3506805/SP foi verificado na referência acima; ela também contém Bocaina/PI
+(2201804), portanto o nome sem UF não foi desambiguado por suposição. O arquivo
+municipal_confirmations.json documenta a confirmação específica da origem ATC, usada
+somente em contexto municipal, sem substituir a resolução geral nacional/estadual.

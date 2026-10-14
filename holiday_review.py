@@ -19,10 +19,8 @@ FIELDS={'id':'ID','day':'Data','municipality':'Município','state':'UF','city':'
 def review_sql(c,month,start=None,end=None):
     frozen=bool(c.execute('SELECT 1 FROM holiday_freeze WHERE month=?',(month,)).fetchone())
     if frozen:
-        base='SELECT '+','.join(f"json_extract(detail,'$.{k}') AS {k}" for k in FIELDS if k!='reason')
-        base+=",json_extract(detail,'$.status') status FROM holiday_frozen_review WHERE month=?"
-        args=[month]
-        if start is not None:base+=" AND json_extract(detail,'$.day') BETWEEN ? AND ?";args.extend([start,end])
+        from municipal_review import frozen_candidates_sql
+        base,args=frozen_candidates_sql(month,start,end)
     else:base,args=holidays.candidate_sql(month,start,end)
     charged,charged_args=holidays.charges_query(c,month,start,end)
     if not frozen and base in charged and charged_args==args:

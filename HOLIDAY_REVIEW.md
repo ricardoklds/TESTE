@@ -49,6 +49,12 @@ esses números. A atualização deixa intactos os cálculos que os produzem. Ao 
 na instalação que contém setembro, confira os indicadores no mês completo e sem
 filtros adicionais; a soma do resumo de pendências deve acompanhar esse indicador.
 
+Correção posterior: o usuário identificou as 834 pendências como ATC BOCAINA e confirmou
+Bocaina/SP. A classificação municipal agora distingue **Não aplicável — outro município**.
+Consulte [BOCAINA_CORRECTION.md](BOCAINA_CORRECTION.md): a correção pode reduzir o
+indicador de pendências, inclusive por projeção de meses fechados, mantendo os valores,
+IDs cobrados e snapshots gravados. Os números acima são o relato anterior à correção.
+
 ## Desempenho e consistência
 
 O SQL aplica situação/localidade/período antes de LIMIT/OFFSET. O Python recebe no

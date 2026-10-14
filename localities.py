@@ -11,6 +11,22 @@ import core
 EXPECTED_SHA='72e96f8c4044bdba30397231a7695a36c9f4134b984f954d5fd65b22675f1702'
 
 @lru_cache(maxsize=1)
+def municipal_confirmations():
+    """Confirmações documentais externas ao banco, apenas para contexto municipal.
+
+    Não substitui resolve(), nem as decisões nacionais/estaduais já existentes.
+    """
+    path=Path(__file__).parent/'reference_data'/'municipal_confirmations.json'
+    entries=json.loads(path.read_text(encoding='utf-8'));_,codes,_=reference()
+    result=[];seen=set()
+    for entry in entries:
+        source=core.norm(entry['source']);r=codes.get(entry['ibge_id'])
+        if not r or r['state']!=entry['state'] or entry['scope']!='Municipal' or source in seen or not entry['evidence'].strip():
+            raise ValueError('Confirmação municipal inválida; atualização cancelada.')
+        seen.add(source);result.append((source,core.norm(r['name']),r['state'],entry['evidence']))
+    return tuple(result)
+
+@lru_cache(maxsize=1)
 def reference():
     content=(Path(__file__).parent/'reference_data'/'municipalities.json').read_bytes()
     if hashlib.sha256(content).hexdigest()!=EXPECTED_SHA:raise ValueError('Referência municipal ausente ou alterada; identificação automática cancelada.')

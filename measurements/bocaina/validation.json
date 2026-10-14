@@ -1,0 +1,12 @@
+{
+  "tests_passed": 60,
+  "production_files_byte_identical": true,
+  "production_files_checked": 7,
+  "september_834_real_records_available": false,
+  "synthetic_834_pending_before": 834,
+  "synthetic_834_pending_after": 0,
+  "synthetic_correct_charges_before": 4,
+  "synthetic_correct_charges_after": 4,
+  "charged_ids_changed": 0,
+  "schema_migration_added": false
+}

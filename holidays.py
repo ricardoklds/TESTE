@@ -96,19 +96,26 @@ def bind(source,municipality,state):
         c.commit()
 
 def candidate_sql(month,start=None,end=None,omit_id=None,restore_id=None):
+    from localities import municipal_confirmations
+    confirmations=municipal_confirmations()
+    values=','.join('(?,?,?,?)' for _ in confirmations) or "('','','','')"
     args=[month];period=''
     if start is not None:period=' AND m.day BETWEEN ? AND ?';args.extend([start,end])
-    sql="""WITH resolved AS (
+    sql="WITH municipal_confirmations(source,municipality,state,evidence) AS (VALUES "+values+"),"+""" resolved AS (
         SELECT m.*,p.supply,p.execution,p.eligible,
-          COALESCE(NULLIF(b.municipality,''),NULLIF(a.municipality,''),'') municipality,
-          COALESCE(NULLIF(b.state,''),NULLIF(a.state,''),'') state,
+          COALESCE(NULLIF(b.municipality,''),NULLIF(k.municipality,''),NULLIF(a.municipality,''),'') municipality,
+          COALESCE(NULLIF(b.state,''),NULLIF(k.state,''),NULLIF(a.state,''),'') state,
           CASE WHEN b.source IS NOT NULL OR proof.import_id IS NOT NULL THEN 'BR' ELSE COALESCE(a.country,'') END country,
           CASE WHEN b.source IS NOT NULL THEN 'Identificação manual confirmada'
+               WHEN k.source IS NOT NULL THEN k.evidence
                WHEN proof.import_id IS NOT NULL THEN 'Execução no Brasil comprovada: '||proof.evidence ELSE a.evidence END location_evidence
         FROM record_metrics m JOIN holiday_identity_records p ON p.id=m.id
         LEFT JOIN municipality_bindings b ON b.source=p.source
         LEFT JOIN automatic_localities a ON a.source=p.source
         LEFT JOIN import_brazil_proofs proof ON proof.import_id=m.import_id
+        LEFT JOIN municipal_confirmations k ON k.source=p.source AND b.source IS NULL
+          AND EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Municipal')
+          AND NOT EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope IN ('Nacional','Estadual'))
     ) SELECT m.id,m.day,m.employee,m.city,m.group_name,m.supply,m.execution,m.municipality,m.state,m.country,m.location_evidence,
       CASE WHEN strftime('%w',m.day)='0' THEN 'Domingo: conferir'
            WHEN m.supply='' OR m.execution='' THEN 'Fornecimento/execução ausente'
@@ -117,6 +124,10 @@ def candidate_sql(month,start=None,end=None,omit_id=None,restore_id=None):
               OR (h.scope='Municipal' AND m.state<>'' AND m.municipality<>'' AND h.state=m.state AND h.municipality=m.municipality))) THEN 'Elegível'
            WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Nacional') AND m.country<>'BR' THEN 'Execução no Brasil não comprovada'
            WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Estadual') AND m.state='' THEN 'UF não confirmada'
+           WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Municipal')
+             AND NOT EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Municipal'
+               AND (m.state='' OR h.state=m.state) AND (m.municipality='' OR h.municipality=m.municipality))
+             THEN 'Não aplicável — outro município'
            WHEN EXISTS(SELECT 1 FROM holidays h WHERE h.day=m.day AND h.scope='Municipal') AND (m.state='' OR m.municipality='') THEN 'Município/UF não confirmado'
            ELSE 'Não aplicável' END status
       FROM resolved m WHERE m.month=? AND m.excluded=0 AND m.import_deleted=0 AND m.day IS NOT NULL
@@ -125,7 +136,7 @@ def candidate_sql(month,start=None,end=None,omit_id=None,restore_id=None):
     if restore_id is not None:
         sql=sql.replace('m.import_deleted=0','(m.import_deleted=0 OR m.import_id=?)')
         args.insert(1,restore_id)
-    return sql,args
+    return sql,[*[value for row in confirmations for value in row],*args]
 
 def charges_query(c,month,start=None,end=None,omit_id=None,restore_id=None):
     period=' AND m.day BETWEEN ? AND ?' if start is not None else ''
@@ -147,7 +158,11 @@ def overview(month,start=None,end=None):
         frozen=c.execute('SELECT 1 FROM holiday_freeze WHERE month=?',(month,)).fetchone()
         sql,args=candidate_sql(month,start,end)
         frozen_period=" AND json_extract(detail,'$.day') BETWEEN ? AND ?" if start is not None else ''
-        stats=c.execute('SELECT status,COUNT(*) n FROM ('+sql+') GROUP BY status',args).fetchall() if not frozen else c.execute("SELECT json_extract(detail,'$.status') status,COUNT(*) n FROM holiday_frozen_review WHERE month=?"+frozen_period+' GROUP BY status',[month,*([start,end] if start is not None else [])]).fetchall()
+        if frozen:
+            from municipal_review import frozen_candidates_sql
+            review,review_args=frozen_candidates_sql(month,start,end)
+            stats=c.execute('SELECT status,COUNT(*) n FROM ('+review+') GROUP BY status',review_args).fetchall()
+        else:stats=c.execute('SELECT status,COUNT(*) n FROM ('+sql+') GROUP BY status',args).fetchall()
         divergent=c.execute("SELECT COALESCE(SUM(n),0) FROM (SELECT COUNT(*) n FROM ("+sql+") WHERE status='Elegível' GROUP BY supply,day,execution HAVING COUNT(DISTINCT municipality||'/'||state)>1)",args).fetchone()[0] if not frozen else 0
     pending=divergent+sum(r['n'] for r in stats if r['status'] in ('Município/UF não confirmado','UF não confirmada','Execução no Brasil não comprovada','Fornecimento/execução ausente','Domingo: conferir'))
     return {'holiday_quantity':quantity,'holiday_pending':pending}
@@ -211,8 +226,7 @@ def filter_options(month,start=None,end=None):
     with connection() as c:
         sql,args=candidate_sql(month,start,end)
         if c.execute('SELECT 1 FROM holiday_freeze WHERE month=?',(month,)).fetchone():
-            sql="SELECT json_extract(detail,'$.municipality') municipality,json_extract(detail,'$.state') state,json_extract(detail,'$.group_name') group_name,json_extract(detail,'$.employee') employee,json_extract(detail,'$.status') status FROM holiday_frozen_review WHERE month=?"
-            args=[month]
-            if start is not None:sql+=" AND json_extract(detail,'$.day') BETWEEN ? AND ?";args.extend([start,end])
+            from municipal_review import frozen_candidates_sql
+            sql,args=frozen_candidates_sql(month,start,end)
         return {key:[r[0] for r in c.execute('SELECT DISTINCT '+expression+' FROM ('+sql+") WHERE status<>'Não aplicável' ORDER BY 1",args)]
                 for key,expression in [('municipality',"COALESCE(municipality,'')||'/'||COALESCE(state,'')"),('group','group_name'),('employee','employee')]}
