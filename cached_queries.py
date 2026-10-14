@@ -24,9 +24,24 @@ def productivity(path,revision,month,prices,by,start=None,end=None):
     return result
 
 @st.cache_data(show_spinner=False,max_entries=128,ttl=600)
-def holiday_page(path,revision,month,start,end,offset,limit,municipality=None,group=None,employee=None):
-    import holidays
-    return holidays.page(month,start,end,offset,limit,municipality,group,employee)
+def holiday_page(path,revision,month,start,end,offset,limit,municipality=None,group=None,employee=None,situation='Todos'):
+    import holiday_review
+    if situation not in holiday_review.SITUATIONS:raise ValueError('Situação inválida.')
+    groups=holiday_review_statistics(path,revision,month,start,end,municipality,group,employee)
+    count=sum(r['n'] for r in groups if situation=='Todos' or
+              situation=='Elegíveis cobrados' and r['charged'] or
+              situation=='Pendências' and r['pending'] or situation=='Não cobrados' and not r['charged'])
+    return holiday_review.page(month,start,end,offset,limit,municipality,group,employee,situation,known_count=count)
+
+@st.cache_data(show_spinner=False,max_entries=128,ttl=600)
+def holiday_review_statistics(path,revision,month,start,end,municipality=None,group=None,employee=None):
+    import holiday_review
+    return holiday_review.statistics(month,start,end,municipality,group,employee)
+
+@st.cache_data(show_spinner=False,max_entries=128,ttl=600)
+def holiday_pending_summary(path,revision,month,start,end,municipality=None,group=None,employee=None):
+    return [{'Motivo':r['reason'],'Quantidade':r['n']} for r in
+            holiday_review_statistics(path,revision,month,start,end,municipality,group,employee) if r['pending']]
 
 @st.cache_data(show_spinner=False,max_entries=128,ttl=600)
 def holiday_options(path,revision,month,start,end):

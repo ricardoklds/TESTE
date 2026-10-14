@@ -11,6 +11,7 @@ import cached_queries as cached
 import excel_io
 import fast_reports
 import holidays
+import holiday_review
 import localities
 from exports import money, productivity, excel_report, pdf_report
 
@@ -202,11 +203,36 @@ elif page=='Fechamento mensal':
         town_filter=hc[0].selectbox('Município/UF do adicional',[None,*options['municipality']],format_func=lambda x:'Todos' if x is None else ('Não confirmado' if x=='/' else x))
         group_filter=hc[1].selectbox('Grupo do adicional',[None,*options['group']],format_func=lambda x:'Todos' if x is None else x)
         employee_filter=hc[2].selectbox('Funcionário do adicional',[None,*options['employee']],format_func=lambda x:'Todos' if x is None else x)
-        n,first_h=cached.holiday_page(cache_path,revision,month,start_arg,end_arg,0,100,town_filter,group_filter,employee_filter)
-        number=st.number_input('Página de feriados',min_value=1,max_value=max(1,(n+99)//100),value=1,step=1,key=f'holiday_page_{month}_{revision}_{start_arg}_{end_arg}_{town_filter}_{group_filter}_{employee_filter}')
-        hrows=first_h if number==1 else cached.holiday_page(cache_path,revision,month,start_arg,end_arg,(number-1)*100,100,town_filter,group_filter,employee_filter)[1]
+        situation_filter=st.selectbox('Situação',holiday_review.SITUATIONS)
+        n,first_h=cached.holiday_page(cache_path,revision,month,start_arg,end_arg,0,100,town_filter,group_filter,employee_filter,situation_filter)
+        number=st.number_input('Página de feriados',min_value=1,max_value=max(1,(n+99)//100),value=1,step=1,key=f'holiday_page_{month}_{revision}_{start_arg}_{end_arg}_{town_filter}_{group_filter}_{employee_filter}_{situation_filter}')
+        hrows=first_h if number==1 else cached.holiday_page(cache_path,revision,month,start_arg,end_arg,(number-1)*100,100,town_filter,group_filter,employee_filter,situation_filter)[1]
         st.caption(f'{n} registros na conferência do adicional.')
-        st.dataframe(pd.DataFrame(hrows).rename(columns={'day':'Data','municipality':'Município','state':'UF','employee':'Funcionário','group_name':'Grupo','city':'Cidade/ATC','supply':'Fornecimento','execution':'Execução','status':'Situação','country':'País','location_evidence':'Comprovação da localidade'}),hide_index=True,width='stretch')
+        columns=[k for k in holiday_review.FIELDS if k!='reason']+['status','Cobrado','Valor (R$)']
+        st.dataframe(pd.DataFrame(hrows,columns=columns).rename(columns={**holiday_review.FIELDS,'status':'Motivo / situação'}),hide_index=True,width='stretch')
+        reasons=cached.holiday_pending_summary(cache_path,revision,month,start_arg,end_arg,town_filter,group_filter,employee_filter)
+        st.write(f"Pendências nos filtros de período/localidade/grupo/funcionário: {sum(r['Quantidade'] for r in reasons)}")
+        st.dataframe(pd.DataFrame(reasons,columns=['Motivo','Quantidade']),hide_index=True,width='stretch')
+        st.caption('Não cobrados inclui pendências e duplicatas sem adicional. O resumo e o Excel contêm somente pendências, respeitando os filtros de período, município, grupo e funcionário. Meses fechados preservam a classificação de pendência do fechamento.')
+        export_key=(revision,month,start_arg,end_arg,town_filter,group_filter,employee_filter)
+        job=st.session_state.get('holiday_pending_job')
+        if st.button('Exportar pendências para Excel',disabled=not reasons or bool(job and not job[1].done())):
+            st.session_state['holiday_pending_job']=(export_key,fast_reports.EXECUTOR.submit(holiday_review.pending_excel,str(storage.DATA/'contrato.sqlite3'),*export_key))
+        @st.fragment(run_every='2s')
+        def pending_export_status():
+            job=st.session_state.get('holiday_pending_job')
+            if not job:return
+            if not job[1].done():st.info('Gerando Excel das pendências em segundo plano…');return
+            try:
+                path=job[1].result()
+                if job[0]!=export_key or queries.revision()!=revision:
+                    st.warning('Os dados ou filtros mudaram. Exporte as pendências novamente.');return
+                if st.button('Preparar download das pendências'):
+                    st.session_state['prepared_holiday_pending']=str(path)
+                if st.session_state.get('prepared_holiday_pending')==str(path):
+                    with path.open('rb') as file:st.download_button('Baixar pendências em Excel',file,file_name=path.name,mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            except Exception as e:st.error(f'Falha na exportação das pendências: {e}')
+        pending_export_status()
     st.subheader('Conferência dos registros')
     category=st.selectbox('Categoria',['Todos',*[core.CATEGORIES[k][1] for k in core.CATEGORIES]])
     mode=st.selectbox('Exibir',['Todos','Com erros','Com avisos','Chaves repetidas','Excluídos'])

@@ -139,6 +139,10 @@ Para executar todos os testes: `python -m unittest discover -s tests -v` usando 
 
 ## Atualização de desempenho para grandes volumes
 
+A conferência agora oferece filtro **Situação**, resumo por motivo e exportação de
+pendências. Veja [HOLIDAY_REVIEW.md](HOLIDAY_REVIEW.md) para usar e atualizar no
+Windows. Inclua o novo módulo `holiday_review.py`; não há nova migração ou dependência.
+
 A otimização para grandes volumes está descrita em [SCALE_PERFORMANCE.md](SCALE_PERFORMANCE.md).
 Para atualizar esta versão, siga [BACKUP_RECOVERY.md](BACKUP_RECOVERY.md). Ela mantém
 o banco na versão 5, sem nova migração e sem mudança de dependências. **Não reinstale
