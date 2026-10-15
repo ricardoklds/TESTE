@@ -197,3 +197,6 @@ Consulte [RECONCILIACAO_PAINEL_AUDITORIA.md](RECONCILIACAO_PAINEL_AUDITORIA.md) 
 
 
 Indicadores operacionais de prazo de vistorias: consulte [VISTORIAS_PRAZO.md](VISTORIAS_PRAZO.md). O módulo utiliza banco separado e não altera os seis serviços de faturamento.
+
+
+Sistema modular, catálogo de Vistorias, Geolocalização e Fechamento Geral: consulte [SISTEMA_MODULAR.md](SISTEMA_MODULAR.md). Essa documentação substitui o fluxo anterior de multa por base manual no aplicativo; simulações antigas permanecem preservadas.

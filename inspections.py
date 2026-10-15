@@ -33,6 +33,7 @@ def connect(root):
     version=c.execute('PRAGMA user_version').fetchone()[0]
     exists=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='visits'").fetchone()
     if exists and version!=1:c.close();raise ValueError('Versão desconhecida: nenhuma migração executada.')
+    if exists and version==1:return c
     c.executescript('''CREATE TABLE IF NOT EXISTS imports(id INTEGER PRIMARY KEY,sha TEXT NOT NULL,sheet TEXT NOT NULL,name TEXT NOT NULL,created TEXT NOT NULL,UNIQUE(sha,sheet));
     CREATE TABLE IF NOT EXISTS visits(id INTEGER PRIMARY KEY,import_id INTEGER NOT NULL,line INTEGER NOT NULL,os TEXT,city TEXT,day TEXT,status TEXT NOT NULL,fingerprint TEXT NOT NULL UNIQUE,raw TEXT NOT NULL,UNIQUE(import_id,line));
     CREATE INDEX IF NOT EXISTS visit_period ON visits(day,status,city);
@@ -61,10 +62,17 @@ def import_file(root,content,name,sheet,progress=None):
         else:
             with target.open('xb') as f:f.write(content)
         import_id=c.execute('INSERT INTO imports(sha,sheet,name,created) VALUES(?,?,?,?)',(sha,sheet,name,datetime.now(timezone.utc).isoformat())).lastrowid
+        approved_months=set()
+        financial=Path(root)/'financeiro.sqlite3'
+        if financial.exists():
+            from contextlib import closing
+            with closing(sqlite3.connect(financial.resolve().as_uri()+'?mode=ro',uri=True)) as fc:
+                approved_months={r[0] for r in fc.execute('SELECT month FROM approvals')}
         batch=[];count=0
         for line,row in enumerate(rows,2):
             if not any(v is not None and str(v).strip() for v in row):continue
             raw=dict(zip(headers,row));dt=date_value(raw.get('Data Fim Execução'))
+            if dt and dt[:7] in approved_months:raise ValueError('Há execução em competência de vistorias já aprovada. Nenhum registro foi importado.')
             city=str(raw.get('Município') or '').strip() or 'Não informado'
             batch.append((import_id,line,str(raw.get('Número OS') or ''),city,dt[:10] if dt else None,classification(raw),hashlib.sha256(json.dumps(raw,ensure_ascii=False,default=str,sort_keys=True).encode()).hexdigest(),json.dumps(raw,ensure_ascii=False,default=str)))
             count+=1

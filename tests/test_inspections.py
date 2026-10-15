@@ -46,10 +46,11 @@ class Inspections(unittest.TestCase):
    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run()
    app.sidebar.date_input[0].set_value(date(2026,9,1))
    with patch.object(api,'export',side_effect=AssertionError('Exportação automática indevida')):
-    app.sidebar.radio[0].set_value('Vistorias').run()
+    app.sidebar.selectbox[0].set_value('Vistorias').run()
+    app.sidebar.radio[0].set_value('Prazos e Meta Contratual').run()
     self.assertFalse(app.exception)
     self.assertTrue(any(m.value=='99%' for m in app.metric))
-    self.assertTrue(any(b.label=='Aplicar multa' and not b.disabled for b in app.button))
+    self.assertFalse(any(b.label=='Aplicar multa' for b in app.button))
    with api.connect(root) as c:self.assertEqual(c.execute('SELECT COUNT(*) FROM penalties').fetchone()[0],0)
  def test_exact_target_no_penalty(self):
   with api.connect(self.root) as c:

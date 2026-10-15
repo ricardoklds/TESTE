@@ -1,0 +1,17 @@
+{
+  "tests_passed": 105,
+  "tests_seconds": 42.271,
+  "focused_tests": 10,
+  "focused_seconds": 0.726,
+  "reading_ui_body_ast_identical_to_608c111": true,
+  "reading_rules_or_prices_files_modified": false,
+  "production_schema_migration": false,
+  "inspection_schema_migration": false,
+  "additional_databases_created_only_on_use": true,
+  "real_readings_september_available": false,
+  "real_inspection_original_read_only": true,
+  "independent_excel_sql_quantities_equal": true,
+  "pending_real_inspection_rows": 247,
+  "benchmark_synthetic_readings": 500000,
+  "benchmark_synthetic_visits": 100000
+}

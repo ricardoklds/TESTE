@@ -107,7 +107,7 @@ class HolidayTests(unittest.TestCase):
         from streamlit.testing.v1 import AppTest
         self.add()
         at=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=60).run()
-        at.sidebar.radio[0].set_value('Configurações').run()
+        at.sidebar.selectbox[0].set_value('Configurações').run()
         self.assertFalse(at.exception)
         next(d for d in at.date_input if d.label=='Data do feriado').set_value(date(2026,10,12))
         next(t for t in at.text_input if t.label=='Descrição do feriado').set_value('Fixture UI')
@@ -118,5 +118,6 @@ class HolidayTests(unittest.TestCase):
         next(c for c in at.checkbox if c.label.startswith('Confirmo que esta origem')).check()
         next(b for b in at.button if b.label=='Salvar identificação municipal').click().run()
         self.assertFalse(at.exception);self.assertEqual(self.qty(),1)
+        at.sidebar.selectbox[0].set_value('Leituras').run()
         at.sidebar.radio[0].set_value('Fechamento mensal').run()
         self.assertFalse(at.exception);self.assertEqual(at.metric[0].value,'R$ 3,93')

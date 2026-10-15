@@ -24,7 +24,8 @@ with tempfile.TemporaryDirectory() as root:
  os.environ['APP_DATA_DIR']=root
  from streamlit.testing.v1 import AppTest
  a=AppTest.from_file(str(Path(__file__).resolve().parent/'app.py'),default_timeout=30).run()
- a.sidebar.radio[0].set_value('Vistorias').run()
+ a.sidebar.selectbox[0].set_value('Vistorias').run()
+ a.sidebar.radio[0].set_value('Prazos e Meta Contratual').run()
  assert not a.exception,repr(a.exception)
  assert any('Meta contratual'==e.value for e in a.subheader)
  result['ui_empty']='AppTest: Vistorias abre, sem exceção, card e controles presentes'

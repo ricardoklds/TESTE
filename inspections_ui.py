@@ -10,25 +10,26 @@ import inspections as api
 @st.cache_data(show_spinner=False,max_entries=32)
 def cached_summary(root,version,start,end):return api.summary(root,start,end)
 
-def render(data,month):
+def render(data,month,show_import=True,show_fine=True):
     root=str(Path(data)/'vistorias');st.title('Vistorias · prazo contratual')
     st.caption('Indicador operacional independente do faturamento. Nenhum desconto é aplicado ao fechamento oficial.')
-    with st.expander('Importar base de vistorias'):
-        upload=st.file_uploader('Excel original de vistorias',type=['xlsx'],key='inspection_upload')
-        if upload:
-            content=upload.getvalue()
-            try:choices=api.sheets(content)
-            except Exception as e:st.error(str(e));return
-            if not choices:st.error('Nenhuma aba com os cabeçalhos obrigatórios.');return
-            sheet=st.selectbox('Aba de registros originais',choices)
-            st.warning('Não some abas copiadas. OS repetidas com datas/resultados distintos são mantidas como ocorrências para conferência, não como cobrança.')
-            approved=st.checkbox('Confirmo esta aba como base operacional, incluindo suas ocorrências repetidas e serviços de ligação inativa, quando presentes.')
-            if st.button('Importar vistorias',disabled=not approved):
-                progress=st.empty()
-                try:
-                    count=api.import_file(root,content,upload.name,sheet,lambda n:progress.write(f'{n:,} registros processados; aguardando confirmação da transação.'))
-                    st.success(f'{count} registros importados.');st.session_state.pop('inspection_export',None)
-                except Exception as e:st.error(f'Importação cancelada integralmente: {e}')
+    if show_import:
+        with st.expander('Importar base de vistorias'):
+            upload=st.file_uploader('Excel original de vistorias',type=['xlsx'],key='inspection_upload')
+            if upload:
+                content=upload.getvalue()
+                try:choices=api.sheets(content)
+                except Exception as e:st.error(str(e));return
+                if not choices:st.error('Nenhuma aba com os cabeçalhos obrigatórios.');return
+                sheet=st.selectbox('Aba de registros originais',choices)
+                st.warning('Não some abas copiadas. OS repetidas com datas/resultados distintos são mantidas como ocorrências para conferência, não como cobrança.')
+                approved=st.checkbox('Confirmo esta aba como base operacional, incluindo suas ocorrências repetidas e serviços de ligação inativa, quando presentes.')
+                if st.button('Importar vistorias',disabled=not approved):
+                    progress=st.empty()
+                    try:
+                        count=api.import_file(root,content,upload.name,sheet,lambda n:progress.write(f'{n:,} registros processados; aguardando confirmação da transação.'))
+                        st.success(f'{count} registros importados.');st.session_state.pop('inspection_export',None)
+                    except Exception as e:st.error(f'Importação cancelada integralmente: {e}')
     first=date.fromisoformat(month+'-01');last=first.replace(day=calendar.monthrange(first.year,first.month)[1])
     mode=st.radio('Período das vistorias',['Mês completo','Dia específico','Intervalo personalizado'],horizontal=True)
     start,end=first,last
@@ -54,29 +55,30 @@ def render(data,month):
     st.caption('Base: OS Fechada e Operação Fechada, independentemente de aprovação, recusa ou glosa. Período pela Data Fim Execução. Tempo Residual é referência de conferência, não substitui as datas.')
     frame=pd.DataFrame([{'Município':r['city'],'Vistorias válidas':r['total'],'Dentro do prazo':r['inside'],'Fora do prazo':r['outside'],'% fora':r['outside_percent'],'Meta contratual (barra)':r['percent'],'Situação':'Apuração incompleta' if pending else ('Meta atingida' if r['met'] else 'Meta não atingida')} for r in rows])
     st.dataframe(frame,hide_index=True,column_config={'Meta contratual (barra)':st.column_config.ProgressColumn('% dentro · meta 99%',min_value=0,max_value=100,format='%.2f%%')})
-    st.subheader('Aplicar multa')
-    st.caption('Cálculo auditável separado, sem alterar preços, faturamento bruto ou históricos existentes. A base deve ser o total documentado do contrato, não apenas leituras nem o município filtrado.')
-    if st.button('Aplicar multa',disabled=not total['total'] or bool(total['met']) or bool(pending)):
-        st.session_state['inspection_fine_scope']=scope
-    if st.session_state.get('inspection_fine_scope')==scope:
-        with st.form('inspection_fine'):
-            base=st.text_input('Fechamento geral do contrato (R$)',placeholder='Informe o total documentado')
-            evidence=st.text_input('Documento/identificação do fechamento e responsável pela confirmação')
-            yes=st.checkbox('Confirmo a base total do contrato e autorizo registrar o cálculo de 1% para este período. Não será aplicado desconto automático.')
-            submit=st.form_submit_button('Confirmar e registrar cálculo')
-        if submit:
-            try:
-                number=Decimal(base.replace('.','').replace(',','.'))
-                if not number.is_finite() or number*100!=(number*100).to_integral_value():raise ValueError('Informe valor monetário com até duas casas decimais.')
-                event=api.fine(root,start,end,int(number*100),evidence,yes,version)
-                st.success('Cálculo registrado no histórico separado. Fechamento oficial preservado.')
-                st.write({'Fechamento geral':f"R$ {event['base_cents']/100:.2f}",'Percentual apurado':f"{100*event['inside']/event['total']:.2f}%",'Multa (1%)':f"R$ {event['penalty_cents']/100:.2f}",'Líquido após multa (simulação)':f"R$ {event['net_cents']/100:.2f}"})
-                st.session_state.pop('inspection_fine_scope',None)
-            except (ValueError,InvalidOperation) as e:st.error(str(e))
-    with st.expander('Histórico auditável de cálculos de multa'):
-        with api.connect(root) as c:
-            events=[dict(r) for r in c.execute('SELECT id,created,payload FROM penalties ORDER BY id DESC LIMIT 50')]
-        st.dataframe(pd.DataFrame(events),hide_index=True)
+    if show_fine:
+        st.subheader('Aplicar multa')
+        st.caption('Cálculo auditável separado, sem alterar preços, faturamento bruto ou históricos existentes. A base deve ser o total documentado do contrato, não apenas leituras nem o município filtrado.')
+        if st.button('Aplicar multa',disabled=not total['total'] or bool(total['met']) or bool(pending)):
+            st.session_state['inspection_fine_scope']=scope
+        if st.session_state.get('inspection_fine_scope')==scope:
+            with st.form('inspection_fine'):
+                base=st.text_input('Fechamento geral do contrato (R$)',placeholder='Informe o total documentado')
+                evidence=st.text_input('Documento/identificação do fechamento e responsável pela confirmação')
+                yes=st.checkbox('Confirmo a base total do contrato e autorizo registrar o cálculo de 1% para este período. Não será aplicado desconto automático.')
+                submit=st.form_submit_button('Confirmar e registrar cálculo')
+            if submit:
+                try:
+                    number=Decimal(base.replace('.','').replace(',','.'))
+                    if not number.is_finite() or number*100!=(number*100).to_integral_value():raise ValueError('Informe valor monetário com até duas casas decimais.')
+                    event=api.fine(root,start,end,int(number*100),evidence,yes,version)
+                    st.success('Cálculo registrado no histórico separado. Fechamento oficial preservado.')
+                    st.write({'Fechamento geral':f"R$ {event['base_cents']/100:.2f}",'Percentual apurado':f"{100*event['inside']/event['total']:.2f}%",'Multa (1%)':f"R$ {event['penalty_cents']/100:.2f}",'Líquido após multa (simulação)':f"R$ {event['net_cents']/100:.2f}"})
+                    st.session_state.pop('inspection_fine_scope',None)
+                except (ValueError,InvalidOperation) as e:st.error(str(e))
+        with st.expander('Histórico auditável de cálculos de multa'):
+            with api.connect(root) as c:
+                events=[dict(r) for r in c.execute('SELECT id,created,payload FROM penalties ORDER BY id DESC LIMIT 50')]
+            st.dataframe(pd.DataFrame(events),hide_index=True)
     detail=st.checkbox('Incluir detalhamento das vistorias fora do prazo')
     if st.button('Preparar exportação Excel'):
         with st.spinner('Gerando exportação sob demanda…'):st.session_state['inspection_export']=(scope,detail,api.export(root,start,end,detail))
