@@ -69,7 +69,8 @@ if page in period_pages:
     else:st.caption(f'Período inclusivo: {start:%d/%m/%Y} a {end:%d/%m/%Y} · coluna Data da Leitura Atual · dentro de {month}.')
     st.info(f'Acumulado mensal preservado: {money(monthly_total)} · {monthly["total_records"]} registros importados. O filtro não altera o fechamento nem os relatórios mensais.')
     if errors or conflicts:st.warning(f'Pendências no mês inteiro: {errors} registros com erros e {conflicts} chaves repetidas. A identificação mensal permanece ativa independentemente do filtro.')
-    if monthly['undated']:st.caption(f'{monthly["undated"]} registros sem data válida na projeção: preservados no acumulado conforme as regras originais; fora dos filtros por dia e intervalo.')
+    if page!='Painel inicial' and monthly['undated']:st.caption(f'{monthly["undated"]} registros sem data válida na projeção: preservados no acumulado conforme as regras originais; fora dos filtros por dia e intervalo.')
+    if page=='Painel inicial' and monthly['undated']:st.caption('Registros sem data são preservados no acumulado e permanecem disponíveis na auditoria técnica.')
     if not stats['valid_count']:st.info('Nenhum registro válido no período selecionado.')
 
 def metrics():
@@ -87,7 +88,7 @@ def record_frame(selected):
 
 if page=='Painel inicial':
     import managerial_ui
-    managerial_ui.render(cache_path,revision,month,prices,start_arg,end_arg)
+    managerial_ui.render(cache_path,revision,month,prices,start_arg,end_arg,dashboard=True)
 
 elif page=='Importar planilhas':
     st.write('Importe uma aba por vez. O arquivo original é arquivado integralmente e identificado por SHA-256.')

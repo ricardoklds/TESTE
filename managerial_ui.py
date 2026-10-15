@@ -1,4 +1,6 @@
 """Componentes gerenciais, separados das ações do fechamento oficial."""
+import hashlib
+import json
 import pandas as pd
 import streamlit as st
 import cached_queries as cached
@@ -9,7 +11,7 @@ from exports import money
 
 
 @st.fragment(run_every='30s')
-def render(path,revision,month,prices,start=None,end=None,report_period=False):
+def render(path,revision,month,prices,start=None,end=None,report_period=False,dashboard=False):
     if queries.revision()!=revision:st.rerun()
     if report_period:
         first,last=periods.month_bounds(month)
@@ -31,12 +33,36 @@ def render(path,revision,month,prices,start=None,end=None,report_period=False):
         filters[key]=tuple(sorted(col.multiselect(managerial.LABELS[key],choices,key=keys[key],placeholder='Todos')))
     st.caption('Sem seleção = Todos. Filtros combinam cidade/ATC, grupo e funcionário; não alteram o fechamento oficial. Localidade e funcionário seguem os dados informados, sem suposições.')
     data=cached.management_overview(path,revision,month,prices,start,end,filters)
-    # Total primeiro mantém a leitura do indicador principal; os três valores são separados.
+    scope=hashlib.sha256(json.dumps([revision,month,start,end,filters],sort_keys=True).encode()).hexdigest()[:16]
+    # Os mesmos três indicadores financeiros; apenas o card existente de feriados ganha ações.
     cols=st.columns(3)
-    for col,label,key in zip(cols,['Faturamento total','Leituras e adicionais normais','Adicional de feriados'],['total_cents','normal_cents','holiday_cents']):col.metric(label,money(data[key]))
-    a,b,c=st.columns(3);a.metric('Leituras faturáveis',f'{data["readings"]:,}'.replace(',','.'));b.metric('Registros processados',f'{data["records"]:,}'.replace(',','.'));c.metric('Registros sem data na seleção',f'{data["undated"]:,}'.replace(',','.'))
+    for col,label,key in zip(cols[:2],['Faturamento total','Leituras e adicionais normais'],['total_cents','normal_cents']):col.metric(label,money(data[key]))
+    if dashboard:
+        with cols[2].container(border=True,key='holiday_card'):
+            st.markdown('<style>.st-key-holiday_card [data-testid="stMetric"]{border:0;padding:0}</style>',unsafe_allow_html=True)
+            st.metric('Adicional de feriados',money(data['holiday_cents']))
+            st.caption('Quantidade: '+f'{data["fee"]:,}'.replace(',','.')+' leituras')
+            if st.button('Exportar leituras em feriados',key='holiday_card_prepare',disabled=data['fee']==0,type='tertiary'):
+                with st.spinner('Preparando somente as leituras cobradas em feriados…'):
+                    try:
+                        import holiday_card_export
+                        content=holiday_card_export.prepare(path,revision,month,start,end,filters,data['fee'],data['holiday_cents'])
+                        if queries.revision()!=revision:raise ValueError('A base mudou. Atualize o painel antes de exportar.')
+                        st.session_state['holiday_card_file']=(scope,content)
+                    except Exception as e:
+                        st.session_state.pop('holiday_card_file',None);st.error(str(e))
+            generated=st.session_state.get('holiday_card_file')
+            if generated and generated[0]==scope:
+                st.download_button('Baixar leituras em feriados',generated[1],file_name=f'leituras-feriados-{month}.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',on_click='ignore')
+            if not data['fee']:st.caption('Nenhuma leitura elegível nesta seleção.')
+    else:cols[2].metric('Adicional de feriados',money(data['holiday_cents']))
+    if dashboard:
+        a,b=st.columns(2)
+    else:a,b,c=st.columns(3)
+    a.metric('Leituras faturáveis',f'{data["readings"]:,}'.replace(',','.'));b.metric('Registros processados',f'{data["records"]:,}'.replace(',','.'))
+    if not dashboard:c.metric('Registros sem data na seleção',f'{data["undated"]:,}'.replace(',','.'))
     st.caption('Registros processados: registros ativos da seleção, inclusive com erros; leituras faturáveis e valores mantêm os critérios financeiros existentes.')
-    if data['undated']:st.warning(f'{data["undated"]} registros sem data permanecem no acumulado mensal da seleção. Filtros por dia e intervalo os deixam fora da visualização.')
+    if not dashboard and data['undated']:st.warning(f'{data["undated"]} registros sem data permanecem no acumulado mensal da seleção. Filtros por dia e intervalo os deixam fora da visualização.')
     if data['errors']:st.warning(f'{data["errors"]} registros ativos com erros na seleção. Não foram corrigidos automaticamente.')
     summary=queries.summary({'units':{k:data[v] for k,v in managerial.UNITS.items() if k!='feriado'},'holiday_quantity':data['fee']},prices)
     st.subheader('Composição do faturamento gerencial')
@@ -54,8 +80,6 @@ def render(path,revision,month,prices,start=None,end=None,report_period=False):
     st.subheader('Detalhamento por cidade/ATC, grupo e funcionário')
     count,first=cached.management_page(path,revision,month,prices,start,end,filters,('city','group','employee'),0,100)
     # Chave inclui o escopo; novas importações ou filtros reiniciam a paginação.
-    import hashlib,json
-    scope=hashlib.sha256(json.dumps([revision,month,start,end,filters],sort_keys=True).encode()).hexdigest()[:16]
     page=int(st.number_input('Página gerencial',min_value=1,max_value=max(1,(count+99)//100),value=1,step=1,key='manager_page_'+scope))
     rows=first if page==1 else cached.management_page(path,revision,month,prices,start,end,filters,('city','group','employee'),(page-1)*100,100)[1]
     if rows:st.dataframe(frame(rows,('city','group','employee')),hide_index=True,width='stretch')

@@ -1,5 +1,7 @@
 # Gestão de medição e fechamento mensal
 
+Ajuste pontual e exportação sob demanda no card de feriados: [CARD_FERIADOS.md](CARD_FERIADOS.md).
+
 Novo painel e exportações com filtros combinados: [PAINEL_GERENCIAL.md](PAINEL_GERENCIAL.md).
 
 Para retomar uma comparação interrompida sem reler Excel, consulte [RETOMAR_COMPARACAO.md](RETOMAR_COMPARACAO.md).

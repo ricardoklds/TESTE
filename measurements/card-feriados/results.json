@@ -1,0 +1,40 @@
+{
+  "synthetic": true,
+  "rows": 500000,
+  "groups": 20,
+  "holiday_quantity": 23809,
+  "before": {
+    "variant": "before",
+    "server_panel_first_month_seconds": 5.021618897997541,
+    "server_panel_cached_seconds_samples": [
+      0.06551597101497464,
+      0.06446196101023816,
+      0.06416639001690783
+    ],
+    "detail_queries_on_panel_load": 0,
+    "financial_total_display": "R$ 1.439.999,45",
+    "holiday_value_display": "R$ 24.999,45"
+  },
+  "after": {
+    "variant": "after",
+    "server_panel_first_month_seconds": 5.015604620013619,
+    "server_panel_cached_seconds_samples": [
+      0.06503874700865708,
+      0.06572018499718979,
+      0.06182909500785172
+    ],
+    "detail_queries_on_panel_load": 0,
+    "financial_total_display": "R$ 1.439.999,45",
+    "holiday_value_display": "R$ 24.999,45",
+    "export_and_ui_seconds": 3.6410717249964364,
+    "xlsx_bytes": 1802512,
+    "detail_queries_after_export": 48,
+    "exported_quantity": 23809,
+    "exported_total_cents": 2499945,
+    "export_unique_ids_match_quantity": true,
+    "repeat_render_reused_export": true
+  },
+  "synthetic_bank_unchanged": true,
+  "production_not_accessed": true,
+  "scope": "Mesmo banco e Python; versões antes/depois em processos separados. AppTest mede execução da interface no servidor, não navegador/rede. Uma amostra inicial e três cacheadas por versão. Não é uma validação real de setembro."
+}

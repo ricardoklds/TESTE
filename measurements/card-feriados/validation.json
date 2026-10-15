@@ -1,0 +1,13 @@
+{
+  "tests_passed": 90,
+  "tests_seconds": 46.991,
+  "focused_tests_passed": 4,
+  "production_files_unchanged": 7,
+  "production_migration": false,
+  "real_september_available": false,
+  "synthetic_benchmark_rows": 500000,
+  "eligible_exported_synthetic_events": 23809,
+  "panel_detail_queries_on_open": 0,
+  "other_pages_preserved": true,
+  "missing_dates_preserved": true
+}
