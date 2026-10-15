@@ -265,44 +265,88 @@ def calculate(manifest_path,scratch):
     return m,result
 
 
-def compare(data,m,result,scratch):
-    """Só é chamado depois de calculo_independente.json ser gravado."""
-    import holidays  # Somente referência posterior, jamais usada no recálculo.
-    import queries
+def compare(data,m,result,scratch,details=True):
+    """Só depois do cálculo: feriados uma vez, em tabela temporária indexada."""
+    import holidays
+    from time import perf_counter
+    began=perf_counter();last_message=began;stage='Preparando comparação';timings={}
+    def progress():
+        nonlocal last_message
+        now=perf_counter()
+        if now-last_message>=2:
+            print(f'{stage}: SQL em execução ({now-began:.1f}s desde o início)...',flush=True)
+            last_message=now
+        return 0
+    def announce(message):
+        nonlocal stage,last_message
+        stage=message;last_message=perf_counter();print(message,flush=True)
     with closing(ro(data)) as c:
+        c.set_progress_handler(progress,100000)
         revision=c.execute('SELECT revision FROM cache_revision WHERE id=1').fetchone()[0]
-        if revision!=m['revision']:raise ValueError('A base mudou desde a exportação das entradas; repita com o aplicativo fechado.')
+        if revision!=m['revision']:raise ValueError('A base mudou desde a exportação das entradas; comparação cancelada sem alterar o cálculo salvo.')
         info=c.execute('SELECT prices FROM months WHERE month=?',(m['month'],)).fetchone()
         if not info or json.loads(info['prices'])!={k:m['prices'][k] for k in KEYS[:-1]}:raise ValueError('Os preços de entrada e da base diferem')
-        overview=queries.overview(m['month'],connection=c)
-        fee_sql,args=holidays.charges_query(c,m['month'])
-        units=overview['units']|{'feriado':c.execute('SELECT COUNT(*) FROM ('+fee_sql+')',args).fetchone()[0]}
-        scratch.execute('CREATE TABLE app(fp TEXT PRIMARY KEY,id INTEGER,import_id INTEGER,line INTEGER,u138 INTEGER,u128 INTEGER,u137 INTEGER,uprint INTEGER,uop INTEGER,fee INTEGER)')
-        sql='WITH fees AS ('+fee_sql+''') SELECT r.fingerprint,r.id,r.import_id,r.line,
-            CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u138 ELSE 0 END,
-            CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u128 ELSE 0 END,
-            CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u137 ELSE 0 END,
-            CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.uprint ELSE 0 END,
-            CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.uop ELSE 0 END,
-            CASE WHEN f.id IS NULL THEN 0 ELSE 1 END
-            FROM records r LEFT JOIN record_metrics m ON m.id=r.id LEFT JOIN fees f ON f.id=r.id
-            WHERE r.month=? AND r.import_deleted=0 ORDER BY r.id'''
-        batch=[]
-        for row in c.execute(sql,[*args,m['month']]):
-            batch.append(tuple(row))
-            if len(batch)>=1000:scratch.executemany('INSERT INTO app VALUES(?,?,?,?,?,?,?,?,?,?)',batch);batch=[]
-        if batch:scratch.executemany('INSERT INTO app VALUES(?,?,?,?,?,?,?,?,?,?)',batch)
-        sums=scratch.execute('SELECT '+','.join('COALESCE(SUM('+v+'),0)' for v in (*METRICS,'fee'))+' FROM app').fetchone()
+        imports=[dict(r) for r in c.execute('SELECT id,name,sha,sheet,mapping,headers,created_at,deleted FROM imports WHERE month=? ORDER BY id',(m['month'],))]
+        if imports!=m['imports']:raise ValueError('As importações não correspondem ao manifesto salvo; confira o caminho da base.')
+        announce('1/4 Somando os cinco serviços no banco, somente leitura')
+        tick=perf_counter()
+        sums=c.execute('SELECT '+','.join('COALESCE(SUM('+v+'),0)' for v in METRICS)+
+            ' FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0',(m['month'],)).fetchone()
+        units=dict(zip(KEYS[:-1],sums));timings['five_services_seconds']=perf_counter()-tick
+        announce('2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)')
+        tick=perf_counter();fee_sql,args=holidays.charges_query(c,m['month'])
+        scratch.execute('CREATE TABLE charged_ids(id INTEGER PRIMARY KEY)')
+        batch=[];fee_count=0
+        for row in c.execute('SELECT id FROM ('+fee_sql+')',args):
+            batch.append((row[0],));fee_count+=1
+            if len(batch)>=1000:scratch.executemany('INSERT INTO charged_ids VALUES(?)',batch);batch=[]
+            if fee_count%10000==0:print(f'Feriados identificados: {fee_count:,}',flush=True)
+        if batch:scratch.executemany('INSERT INTO charged_ids VALUES(?)',batch)
+        units['feriado']=fee_count;timings['holiday_ids_seconds']=perf_counter()-tick
+        announce(f'Feriados identificados: {fee_count:,}. Consulta de feriados concluída.')
+        detail_matches=None;rows=0
+        if details:
+            announce('3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha')
+            tick=perf_counter()
+            scratch.execute('CREATE TABLE app(fp TEXT PRIMARY KEY,id INTEGER,import_id INTEGER,line INTEGER,u138 INTEGER,u128 INTEGER,u137 INTEGER,uprint INTEGER,uop INTEGER,fee INTEGER)')
+            sql="""SELECT r.fingerprint,r.id,r.import_id,r.line,
+                CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u138 ELSE 0 END,
+                CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u128 ELSE 0 END,
+                CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.u137 ELSE 0 END,
+                CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.uprint ELSE 0 END,
+                CASE WHEN m.excluded=0 AND m.import_deleted=0 THEN m.uop ELSE 0 END,0
+                FROM records r LEFT JOIN record_metrics m ON m.id=r.id
+                WHERE r.month=? AND r.import_deleted=0 ORDER BY r.id"""
+            batch=[]
+            for row in c.execute(sql,(m['month'],)):
+                batch.append(tuple(row));rows+=1
+                if len(batch)>=1000:scratch.executemany('INSERT INTO app VALUES(?,?,?,?,?,?,?,?,?,?)',batch);batch=[]
+                if rows%10000==0:print(f'Registros transferidos: {rows:,} ({perf_counter()-tick:.1f}s)',flush=True)
+            if batch:scratch.executemany('INSERT INTO app VALUES(?,?,?,?,?,?,?,?,?,?)',batch)
+            timings['record_transfer_seconds']=perf_counter()-tick
+            announce('4/4 Conferindo feriados por índice no banco temporário e conciliando somas')
+            tick=perf_counter()
+            scratch.execute('CREATE INDEX app_id ON app(id)')
+            scratch.execute('UPDATE app SET fee=1 WHERE id IN (SELECT id FROM charged_ids)')
+            detail_sums=scratch.execute('SELECT '+','.join('COALESCE(SUM('+v+'),0)' for v in (*METRICS,'fee'))+' FROM app').fetchone()
+            detail_matches=all(detail_sums[i]==units[k] for i,k in enumerate(KEYS))
+            timings['indexed_join_and_sum_seconds']=perf_counter()-tick
+        else:announce('3/4 e 4/4 Comparação agregada: usando as seis quantidades já salvas, sem ler Excel')
         result['comparison']={'app_quantities':units,'app_total_cents':sum(units[k]*m['prices'][k] for k in KEYS),
             'delta_quantities':{k:result['independent_quantities'][k]-units[k] for k in KEYS},
             'delta_cents':result['independent_total_cents']-sum(units[k]*m['prices'][k] for k in KEYS),
-            'app_details_match_aggregates':all(sums[i]==units[k] for i,k in enumerate(KEYS)),
+            'app_details_match_aggregates':detail_matches,'detail_comparison_available':details,
+            'app_records_transferred':rows,'timings':timings,
             'limits':['O SQL do aplicativo é consultado somente nesta etapa. Não influenciou as quantidades independentes.',
                       'Se o mês foi congelado e o calendário foi alterado depois, a referência pode manter feriados históricos. O recálculo usa o calendário exportado, sem copiar cobranças congeladas.']}
+        c.set_progress_handler(None,0)
     scratch.commit()
+    timings['comparison_total_seconds']=perf_counter()-began
+    print(f'Comparação concluída em {timings["comparison_total_seconds"]:.2f}s.',flush=True)
 
 
 def reports(output,m,result,scratch,has_comparison):
+    print('Gerando relatórios detalhados dos originais...',flush=True)
     book=openpyxl.Workbook(write_only=True)
     headers=['Sequência independente','ID no aplicativo','Importação','Arquivo','Aba','Linha original','Fingerprint','Situação',
              'Grupo','Cidade/ATC','Município','UF','Evidência localidade','Funcionário','Fornecimento','Execução','Data original',
@@ -335,6 +379,7 @@ def reports(output,m,result,scratch,has_comparison):
         if r['day'] is None:dateless.append(values)
         fee_rows.append(values)  # Includes noncharged/undated records, preserving all reasons.
         counts[r['fee_reason']]+=1
+        if r['seq']%10000==0:print(f'Linhas exportadas para Excel: {r["seq"]:,}',flush=True)
         # Full duplicates have zero contribution and are explained in Registros originais.
         if has_comparison and r['disposition']!='Duplicata integral do original':
             other=[r['app_'+v] or 0 for v in (*METRICS,'fee')]
@@ -381,6 +426,48 @@ def reports(output,m,result,scratch,has_comparison):
         'calculo_independente.json foi gravado antes da comparação e não é sobrescrito por ela.\n',encoding='utf-8')
 
 
+def compare_saved(data,folder,output):
+    """Retoma JSON legado: somente seis agregados; nenhum Excel é aberto."""
+    folder=Path(folder).resolve();output=Path(output).resolve();data=Path(data).resolve()
+    if output==data or data in output.parents or output==folder or folder in output.parents:
+        raise ValueError('Use uma pasta de saída nova, fora de data e da validação original.')
+    manifest=folder/'entradas.json';sealed=folder/'calculo_independente.json'
+    m=json.loads(manifest.read_text(encoding='utf-8'));result=json.loads(sealed.read_text(encoding='utf-8'))
+    if result.get('manifest_sha256')!=sha(manifest):raise ValueError('O manifesto não corresponde ao cálculo independente salvo.')
+    if (result.get('month')!=m.get('month') or result.get('prices')!=m.get('prices') or
+        result.get('calculation_completed_before_comparison') is not True):
+        raise ValueError('O cálculo salvo está incompleto ou não corresponde às entradas.')
+    q=result.get('independent_quantities',{})
+    if (any(type(q.get(k)) is not int or q[k]<0 for k in KEYS) or
+        type(result.get('independent_total_cents')) is not int or
+        sum(q[k]*m['prices'][k] for k in KEYS)!=result['independent_total_cents']):
+        raise ValueError('As quantidades, preços e total do JSON salvo não são consistentes.')
+    source_hash=sha(sealed);output.mkdir(parents=True,exist_ok=False)
+    result['resume']={'independent_file_sha256':source_hash,'manifest_sha256':sha(manifest),
+        'reread_excel':False,'independent_file_overwritten':False,
+        'scope':'Comparação agregada dos seis serviços. O JSON legado não contém as unidades independentes por registro.',
+        'limits':'A interrupção da versão antiga removia o banco temporário de detalhes. IDs de divergências independentes não podem ser reconstruídos apenas do JSON, sem reler originais.'}
+    with tempfile.TemporaryDirectory(prefix='sabesp-comparacao-') as temp,closing(sqlite3.connect(Path(temp)/'comparacao.sqlite3')) as scratch:
+        scratch.row_factory=sqlite3.Row;compare(data,m,result,scratch,details=False)
+    if sha(sealed)!=source_hash:raise ValueError('O cálculo independente foi alterado externamente durante a comparação.')
+    book=openpyxl.Workbook(write_only=True)
+    sheet=Rows(book,'Comparação seis serviços',['Serviço','Quantidade independente salva','Quantidade aplicativo',
+        'Diferença quantidade','Preço centavos','Valor independente centavos','Valor aplicativo centavos','Diferença centavos'])
+    for k in KEYS:
+        a=q[k];b=result['comparison']['app_quantities'][k];price=m['prices'][k]
+        sheet.append([k,a,b,a-b,price,a*price,b*price,(a-b)*price])
+    notes=Rows(book,'Escopo e evidências',['Campo','Valor'])
+    for k,v in result['resume'].items():notes.append([k,str(v)])
+    book.save(output/'comparacao.xlsx')
+    (output/'comparacao.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    (output/'RELATORIO_COMPARACAO.md').write_text('# Comparação do cálculo independente salvo\n\n'
+        'Nenhum Excel foi relido e o cálculo original não foi sobrescrito. Comparação somente leitura no banco.\n\n'
+        'Escopo: agregados por serviço. A ausência de diferença no total não comprova igualdade registro a registro.\n\n```json\n'+
+        json.dumps({'resume':result['resume'],'comparison':result['comparison']},ensure_ascii=False,indent=2)+'\n```\n',encoding='utf-8')
+    print(f'Comparação salva em {output}. Cálculo original preservado.',flush=True)
+    return result
+
+
 def run(output,data=None,manifest=None,month='2026-09',compare_app=True,previous_audit=None):
     output=Path(output).resolve()
     if bool(data)==bool(manifest):raise ValueError('Informe apenas --data ou --manifest.')
@@ -422,4 +509,9 @@ if __name__=='__main__':
     g.add_argument('--data');g.add_argument('--manifest');p.add_argument('--month',default='2026-09');p.add_argument('--output',required=True)
     p.add_argument('--sem-comparacao',action='store_true',help='Não consulta resultados do aplicativo, nem depois do cálculo.')
     p.add_argument('--auditoria-anterior',help='resultado.json da auditoria anterior; lido somente depois do recálculo.')
-    a=p.parse_args();run(a.output,a.data,a.manifest,a.month,not a.sem_comparacao,a.auditoria_anterior)
+    p.add_argument('--somente-comparacao',metavar='PASTA',help='Reutiliza entradas.json e calculo_independente.json; não relê Excel.')
+    a=p.parse_args()
+    if a.somente_comparacao:
+        if not a.data or a.sem_comparacao or a.auditoria_anterior:p.error('--somente-comparacao exige --data e não aceita --sem-comparacao/--auditoria-anterior.')
+        compare_saved(a.data,a.somente_comparacao,a.output)
+    else:run(a.output,a.data,a.manifest,a.month,not a.sem_comparacao,a.auditoria_anterior)

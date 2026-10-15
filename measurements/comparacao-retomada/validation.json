@@ -1,0 +1,12 @@
+{
+  "tests_passed": 79,
+  "test_suite_seconds": 47.559,
+  "production_files_unchanged": 7,
+  "synthetic_benchmark_rows": 379523,
+  "legacy_single_file_patch_cli_passed": true,
+  "legacy_saved_october_total_cents": 3045412,
+  "legacy_saved_october_delta_cents": 0,
+  "reread_excel": false,
+  "production_schema_changes": false,
+  "original_independent_output_overwritten": false
+}

@@ -1,5 +1,7 @@
 # Validação independente pelos Excel originais
 
+Se o cálculo terminou e a comparação foi interrompida, consulte [RETOMAR_COMPARACAO.md](RETOMAR_COMPARACAO.md). O novo modo `--somente-comparacao` reutiliza os agregados salvos sem reler Excel nem sobrescrever o cálculo original.
+
 ## O que esta ferramenta comprova
 
 `validacao_independente.py` implementa novamente os seis critérios, relendo os originais arquivados. Não usa `core.evaluate`, os resultados JSON dos registros, as projeções SQL financeiras ou a ferramenta de auditoria para calcular quantidades. Nem R$ 596.906,23 nem 19.951 são constantes do programa ou condições de parada. O cálculo também não importa os motores financeiros do aplicativo: módulos de referência do aplicativo só são carregados **depois**, para comparação opcional.
