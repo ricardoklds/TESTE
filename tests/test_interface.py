@@ -61,7 +61,7 @@ class InterfaceTests(unittest.TestCase):
         for page in ('Painel inicial','Fechamento mensal','Produtividade'):
             with self.subTest(page=page):
                 at=self.app(page)
-                expected=core.summarize(periods.valid_records(periods.filter_period(rows,maps,'2026-10',first,last)),prices)
+                expected=core.summarize(rows,prices)
                 self.assertEqual(at.metric[0].value,money(sum(r['total_cents'] for r in expected)))
                 self.assertTrue(any('R$ 30.454,12' in x.value for x in at.info))
                 at.radio(key='period_mode').set_value('Dia específico').run()

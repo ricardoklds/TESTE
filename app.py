@@ -60,16 +60,16 @@ if page in period_pages:
         start=c1.date_input('Data inicial',value=first,min_value=first,max_value=last,format='DD/MM/YYYY',key='period_start_'+month)
         end=c2.date_input('Data final',value=last,min_value=first,max_value=last,format='DD/MM/YYYY',key='period_end_'+month)
     try:
-        periods.validate_bounds(month,start,end)
-        start_arg,end_arg=start.isoformat(),end.isoformat()
+        start_arg,end_arg=periods.query_bounds(month,mode,start,end)
     except ValueError as e:
         st.error(str(e));start_arg=end_arg='9999-12-31'
     stats=cached.overview(cache_path,revision,month,start_arg,end_arg)
     summary=queries.summary(stats,prices);total=sum(r['total_cents'] for r in summary)
-    st.caption(f'Período inclusivo: {start:%d/%m/%Y} a {end:%d/%m/%Y} · coluna Data da Leitura Atual · dentro de {month}.')
+    if mode=='Mês completo':st.caption('Mês completo: acumulado do mês de referência, incluindo registros sem data conforme as regras existentes.')
+    else:st.caption(f'Período inclusivo: {start:%d/%m/%Y} a {end:%d/%m/%Y} · coluna Data da Leitura Atual · dentro de {month}.')
     st.info(f'Acumulado mensal preservado: {money(monthly_total)} · {monthly["total_records"]} registros importados. O filtro não altera o fechamento nem os relatórios mensais.')
     if errors or conflicts:st.warning(f'Pendências no mês inteiro: {errors} registros com erros e {conflicts} chaves repetidas. A identificação mensal permanece ativa independentemente do filtro.')
-    if monthly['undated']:st.caption(f'{monthly["undated"]} registros sem data válida: fora dos indicadores do período; permanecem no histórico e no acumulado conforme as regras originais.')
+    if monthly['undated']:st.caption(f'{monthly["undated"]} registros sem data válida na projeção: preservados no acumulado conforme as regras originais; fora dos filtros por dia e intervalo.')
     if not stats['valid_count']:st.info('Nenhum registro válido no período selecionado.')
 
 def metrics():

@@ -1,6 +1,6 @@
 """Consultas SQL limitadas e agregadas sobre resultados já calculados."""
 import json
-from contextlib import closing
+from contextlib import closing, nullcontext
 import core,storage
 
 COLS={'138':'u138','128':'u128','137':'u137','impressao':'uprint','apontamento':'uop'}
@@ -20,10 +20,10 @@ def duplicates(month):
     return '''SELECT business_key FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0
         AND business_key IS NOT NULL GROUP BY business_key HAVING COUNT(*)>1''',[month]
 
-def overview(month,start=None,end=None):
+def overview(month,start=None,end=None,*,connection=None):
     condition,args=where(month,start,end)
     eligible='m.excluded=0 AND m.import_deleted=0'+(' AND m.errors=0' if start is not None else '')
-    with closing(storage.connect()) as c:
+    with (nullcontext(connection) if connection is not None else closing(storage.connect())) as c:
         combined=c.execute('''SELECT COUNT(*) total_records,COUNT(DISTINCT import_id) import_count,
             COALESCE(SUM(excluded<>0 OR import_deleted<>0),0) excluded_count,
             COALESCE(SUM(excluded=0 AND import_deleted=0),0) active_count,

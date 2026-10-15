@@ -183,3 +183,6 @@ No Windows, use `.\.venv\Scripts\python.exe` no lugar de `.venv/bin/python`. O v
 ## Ambiente de desenvolvimento na nuvem
 
 Use o checkout existente em `/workspace/TESTE`; cada tarefa já está isolada e não precisa de worktree. Dependências permanecem em `.venv`; processos devem ser iniciados novamente em novas tarefas. O servidor é iniciado com `.venv/bin/python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501`. Valide a saúde local e as telas com Streamlit AppTest. Não há credenciais adicionais nem serviços externos necessários para os cálculos.
+# Reconciliação do painel com a auditoria
+
+Consulte [RECONCILIACAO_PAINEL_AUDITORIA.md](RECONCILIACAO_PAINEL_AUDITORIA.md) para a correção do recorte de “Mês completo” e o diagnóstico somente leitura no Windows.

@@ -34,6 +34,18 @@ def validate_bounds(month, start, end):
         raise ValueError('Escolha um período dentro do mês de referência.')
 
 
+def query_bounds(month, mode, start, end):
+    """Mês completo é o acumulado importado; apenas dia/intervalo filtram datas."""
+    if mode == 'Mês completo':
+        return None, None
+    if mode not in ('Dia específico', 'Intervalo personalizado'):
+        raise ValueError('Período de visualização inválido.')
+    validate_bounds(month, start, end)
+    if mode == 'Dia específico' and start != end:
+        raise ValueError('Selecione somente um dia.')
+    return start.isoformat(), end.isoformat()
+
+
 def import_mappings(imports):
     return {item['id']: json.loads(item['mapping']) for item in imports}
 
