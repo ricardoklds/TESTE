@@ -64,3 +64,18 @@ def import_preview(path,revision,month,import_id):
     """Política municipal Bocaina/SP, revisão de código 2026-10-14."""
     import storage
     return storage.import_preview(month,import_id)
+
+@st.cache_data(show_spinner=False,max_entries=128,ttl=600)
+def management_overview(path,revision,month,prices,start=None,end=None,filters=None):
+    import managerial
+    return managerial.overview(path,month,prices,start,end,filters)
+
+@st.cache_data(show_spinner=False,max_entries=128,ttl=600)
+def management_options(path,revision,month,start=None,end=None):
+    import managerial
+    return managerial.options(path,month,start,end)
+
+@st.cache_data(show_spinner=False,max_entries=128,ttl=600)
+def management_page(path,revision,month,prices,start=None,end=None,filters=None,by=('employee',),offset=0,limit=50):
+    import managerial
+    return managerial.page(path,month,prices,start,end,filters,by,offset,limit)

@@ -1,0 +1,13 @@
+{
+  "tests_passed": 86,
+  "test_suite_seconds": 47.196,
+  "production_files_unchanged": 7,
+  "production_migration": false,
+  "synthetic_rows": 500000,
+  "september_reference_is_input_only": true,
+  "real_september_available": false,
+  "october_reference_matches": true,
+  "official_closing_unchanged_by_filters": true,
+  "new_daily_import_cache_invalidation_tested": true,
+  "closed_holiday_snapshot_preserved": true
+}

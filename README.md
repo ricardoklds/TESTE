@@ -1,5 +1,7 @@
 # Gestão de medição e fechamento mensal
 
+Novo painel e exportações com filtros combinados: [PAINEL_GERENCIAL.md](PAINEL_GERENCIAL.md).
+
 Para retomar uma comparação interrompida sem reler Excel, consulte [RETOMAR_COMPARACAO.md](RETOMAR_COMPARACAO.md).
 
 Para recalcular diretamente dos originais, sem usar totais anteriores, consulte [VALIDACAO_INDEPENDENTE.md](VALIDACAO_INDEPENDENTE.md).

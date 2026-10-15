@@ -1,0 +1,30 @@
+{
+  "month": "2026-10",
+  "read_only": true,
+  "revision": 2,
+  "total_cents": 3045412,
+  "reference_total_cents": 3045412,
+  "delta_cents": 0,
+  "quantities": {
+    "138": 15942,
+    "128": 3379,
+    "137": 142,
+    "impressao": 5346,
+    "apontamento": 2523,
+    "feriado": 0
+  },
+  "delta_quantities": {
+    "138": 0,
+    "128": 0,
+    "137": 0,
+    "impressao": 0,
+    "apontamento": 0,
+    "feriado": 0
+  },
+  "partition_totals_match": {
+    "city": true,
+    "group": true,
+    "employee": true
+  },
+  "matches_reference": true
+}

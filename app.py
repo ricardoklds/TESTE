@@ -86,22 +86,8 @@ def record_frame(selected):
     return pd.DataFrame([{'ID':r['id'],'Arquivo':r['name'],'Aba':r['sheet'],'Linha original':r['line'],'Data da leitura':str(r['raw'].get(mappings.get(r['import_id'], {}).get('date')) or ''),'Funcionário':r['result']['employee'],'ATC':r['result']['city'],'Excluído':bool(r['excluded']),'Motivo':r['reason'],'Erros':'; '.join(r['result']['errors']),'Avisos':'; '.join(r['result']['alerts']),**{core.CATEGORIES[k][1]:v for k,v in r['result']['units'].items()}} for r in selected])
 
 if page=='Painel inicial':
-    st.write('Acompanhe o faturamento, a medição e as pendências do período selecionado.')
-    metrics()
-    if not monthly["total_records"]:st.info('Comece em Importar planilhas. Nenhum dado fictício foi carregado.')
-    st.subheader('Composição do faturamento')
-    st.dataframe(summary_frame(),hide_index=True,width='stretch')
-    left,right=st.columns([3,2])
-    with left:
-        st.subheader('Quantidade por categoria')
-        st.bar_chart(pd.DataFrame({'Serviço':[r['Categoria'] for r in summary],'Quantidade':[r['Quantidade'] for r in summary]}).set_index('Serviço'),color='#147D92')
-    with right:
-        st.subheader('Conferência do período')
-        st.write(f'**{stats["import_count"]}** abas com registros no período')
-        st.write(f'**{stats["units"]["impressao"]}** comunicados impressos')
-        st.write(f'**{stats["units"]["apontamento"]}** apontamentos operacionais')
-        st.write(f'**{stats["excluded_count"]}** registros excluídos com justificativa no período')
-        st.caption('Os adicionais podem incidir no mesmo registro de uma leitura; não são contados como novas leituras.')
+    import managerial_ui
+    managerial_ui.render(cache_path,revision,month,prices,start_arg,end_arg)
 
 elif page=='Importar planilhas':
     st.write('Importe uma aba por vez. O arquivo original é arquivado integralmente e identificado por SHA-256.')
@@ -296,6 +282,10 @@ elif page=='Produtividade':
             storage.save_setting('goals',all_goals);st.rerun()
 
 elif page=='Relatórios':
+    st.subheader('Relatórios gerenciais')
+    import managerial_ui
+    managerial_ui.render(cache_path,revision,month,prices,report_period=True)
+    st.divider();st.subheader('Relatórios oficiais do mês — sem filtros gerenciais')
     st.write('Exporte o fechamento, produtividade e rastreabilidade. O Excel inclui todas as colunas importadas; o PDF traz indicadores, tabelas e gráfico.')
     metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
     contract=storage.settings().get('contract',{})
