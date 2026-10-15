@@ -30,12 +30,17 @@ def parsed_file(content):
 with st.sidebar:
     st.title('💧 Medição')
     st.caption('GESTÃO DO CONTRATO · LEITURAS')
-    page=st.radio('Navegação',['Painel inicial','Importar planilhas','Fechamento mensal','Produtividade','Relatórios','Configurações'],label_visibility='collapsed')
+    page=st.radio('Navegação',['Painel inicial','Importar planilhas','Fechamento mensal','Produtividade','Relatórios','Configurações','Vistorias'],label_visibility='collapsed')
     st.divider()
     reference=st.date_input('Mês de referência',value=date(2026,10,1),format='DD/MM/YYYY')
     month=reference.strftime('%Y-%m')
     st.caption('O dia selecionado não afeta o fechamento.')
     st.caption('Dados locais · Originais preservados')
+
+if page=='Vistorias':
+    import inspections_ui
+    inspections_ui.render(storage.DATA,month)
+    st.stop()
 
 info=storage.month_info(month);prices=info['prices']
 revision=queries.revision();cache_path=str(storage.DATA.resolve())

@@ -194,3 +194,6 @@ Use o checkout existente em `/workspace/TESTE`; cada tarefa já está isolada e 
 # Reconciliação do painel com a auditoria
 
 Consulte [RECONCILIACAO_PAINEL_AUDITORIA.md](RECONCILIACAO_PAINEL_AUDITORIA.md) para a correção do recorte de “Mês completo” e o diagnóstico somente leitura no Windows.
+
+
+Indicadores operacionais de prazo de vistorias: consulte [VISTORIAS_PRAZO.md](VISTORIAS_PRAZO.md). O módulo utiliza banco separado e não altera os seis serviços de faturamento.
