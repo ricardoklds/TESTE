@@ -1,0 +1,52 @@
+{
+  "month": "2026-10",
+  "prices": {
+    "138": 138,
+    "128": 128,
+    "137": 137,
+    "impressao": 50,
+    "apontamento": 50,
+    "feriado": 105
+  },
+  "independent_quantities": {
+    "138": 15942,
+    "128": 3379,
+    "137": 142,
+    "impressao": 5346,
+    "apontamento": 2523,
+    "feriado": 0
+  },
+  "independent_total_cents": 3045412,
+  "originals": [
+    {
+      "id": 1,
+      "name": "XLSConsumptionAnalysis-261013103155920-1.xlsx",
+      "sha": "7230668fd0fa96ed3b8417e7399028fa6001adbd2a79258fba04b759caadb013",
+      "rows": 19668,
+      "sha_verified": true
+    }
+  ],
+  "date_classes": {
+    "Data no mês de referência": 19622,
+    "Data vazia: mês apenas pela importação": 46
+  },
+  "active_missing_date": 46,
+  "active_date_classes": {
+    "Data no mês de referência": 19622,
+    "Data vazia: mês apenas pela importação": 46
+  },
+  "missing_date_attribution": {
+    "confirmed_by_reading_date": 0,
+    "criterion": "Sem data não se comprova a ocorrência no mês por esta coluna. Inclusão financeira mantém a associação documental da importação, sem inventar uma data.",
+    "quantities_in_monthly_by_import_provenance": {
+      "138": 2,
+      "128": 4,
+      "137": 0,
+      "impressao": 35,
+      "apontamento": 37,
+      "feriado": 0
+    }
+  },
+  "manifest_sha256": "5082635967d90fae6adeb154add96743691b2de89582ce9e641565e614f27aff",
+  "calculation_completed_before_comparison": true
+}

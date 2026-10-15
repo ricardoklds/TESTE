@@ -1,0 +1,14 @@
+{
+  "tests_passed": 75,
+  "tests_seconds": 47.26,
+  "production_files_unchanged": 7,
+  "september_available": false,
+  "production_migration": false,
+  "independent_original_rows": 19668,
+  "independent_october_total_cents": 3045412,
+  "independent_matches_app_per_record": true,
+  "test_engine_mutation_does_not_influence_independent_quantities": true,
+  "manifest_mode_test_no_database_access": true,
+  "focused_final_tests_passed": 6,
+  "standalone_package_comparison_smoke_passed": true
+}

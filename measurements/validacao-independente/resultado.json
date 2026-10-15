@@ -1,0 +1,105 @@
+{
+  "month": "2026-10",
+  "prices": {
+    "138": 138,
+    "128": 128,
+    "137": 137,
+    "impressao": 50,
+    "apontamento": 50,
+    "feriado": 105
+  },
+  "independent_quantities": {
+    "138": 15942,
+    "128": 3379,
+    "137": 142,
+    "impressao": 5346,
+    "apontamento": 2523,
+    "feriado": 0
+  },
+  "independent_total_cents": 3045412,
+  "originals": [
+    {
+      "id": 1,
+      "name": "XLSConsumptionAnalysis-261013103155920-1.xlsx",
+      "sha": "7230668fd0fa96ed3b8417e7399028fa6001adbd2a79258fba04b759caadb013",
+      "rows": 19668,
+      "sha_verified": true
+    }
+  ],
+  "date_classes": {
+    "Data no mês de referência": 19622,
+    "Data vazia: mês apenas pela importação": 46
+  },
+  "active_missing_date": 46,
+  "active_date_classes": {
+    "Data no mês de referência": 19622,
+    "Data vazia: mês apenas pela importação": 46
+  },
+  "missing_date_attribution": {
+    "confirmed_by_reading_date": 0,
+    "criterion": "Sem data não se comprova a ocorrência no mês por esta coluna. Inclusão financeira mantém a associação documental da importação, sem inventar uma data.",
+    "quantities_in_monthly_by_import_provenance": {
+      "138": 2,
+      "128": 4,
+      "137": 0,
+      "impressao": 35,
+      "apontamento": 37,
+      "feriado": 0
+    }
+  },
+  "manifest_sha256": "5082635967d90fae6adeb154add96743691b2de89582ce9e641565e614f27aff",
+  "calculation_completed_before_comparison": true,
+  "comparison": {
+    "app_quantities": {
+      "138": 15942,
+      "128": 3379,
+      "137": 142,
+      "impressao": 5346,
+      "apontamento": 2523,
+      "feriado": 0
+    },
+    "app_total_cents": 3045412,
+    "delta_quantities": {
+      "138": 0,
+      "128": 0,
+      "137": 0,
+      "impressao": 0,
+      "apontamento": 0,
+      "feriado": 0
+    },
+    "delta_cents": 0,
+    "app_details_match_aggregates": true,
+    "limits": [
+      "O SQL do aplicativo é consultado somente nesta etapa. Não influenciou as quantidades independentes.",
+      "Se o mês foi congelado e o calendário foi alterado depois, a referência pode manter feriados históricos. O recálculo usa o calendário exportado, sem copiar cobranças congeladas."
+    ],
+    "different_records": 0,
+    "detail_delta_matches_totals": true
+  },
+  "holiday_reasons": {
+    "Sem feriado cadastrado nesta data": 19315,
+    "Causa preenchida": 142,
+    "Sem data válida: feriado não verificável": 46,
+    "Fatura Retida diferente de Não": 165
+  },
+  "commercial_crosschecks_active_unique": {
+    "Registros retida=nao": 19463,
+    "Causa vazia": 19490,
+    "Comunicados cobrados": 5346,
+    "Apontamentos cobrados": 2523,
+    "Causa preenchida": 178,
+    "Registros retida=sim": 205,
+    "Leituras cobradas em retidas": 0,
+    "Impressão cobrada em retidas": 198,
+    "Apontamentos cobrados em retidas": 183
+  },
+  "limits": [
+    "Sem data de leitura não é possível comprovar a data real apenas pelo mês escolhido na importação.",
+    "Inclusão no acumulado por proveniência de importação segue a regra já existente; não é confirmação independente de setembro.",
+    "Exclusões lógicas e associação dos arquivos ao mês são controles importados do manifesto, não resultados financeiros.",
+    "Não usa quantidades manuais nem valores-alvo; todos os totais são somas das linhas dos originais.",
+    "Mapeamentos, calendário e confirmações documentais são entradas configuradas, exportadas e auditáveis; não são revalidadas por uma fonte externa nesta execução.",
+    "As contagens de datas incluem as linhas dos originais; active_missing_date considera apenas os fingerprints ativos únicos.",
+    "A fórmula de feriado independe das cinco validações gerais, conforme o comportamento vigente; domingos não são cobrados automaticamente."
+  ]
+}

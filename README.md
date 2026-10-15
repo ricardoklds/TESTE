@@ -1,5 +1,7 @@
 # Gestão de medição e fechamento mensal
 
+Para recalcular diretamente dos originais, sem usar totais anteriores, consulte [VALIDACAO_INDEPENDENTE.md](VALIDACAO_INDEPENDENTE.md).
+
 Aplicação local em português para serviços de leitura de hidrômetros. Importação de Excel, fechamento mensal, produtividade por funcionário e ATC, metas informadas pelo usuário, conferência por registro, preços configuráveis e exportação Excel/PDF.
 
 ## Executar no computador
