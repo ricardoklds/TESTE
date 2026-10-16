@@ -112,8 +112,8 @@ class ModularFinanceTests(unittest.TestCase):
    for page in ['Painel de Vistorias','Importação de Vistorias','Prazos e Meta Contratual','Serviços e Tabela de Preços','Geolocalização','Faturamento de Vistorias','Relatórios de Vistorias']:
     navigate(app,page);self.assertFalse(app.exception,page)
     if page=='Serviços e Tabela de Preços':
-     next(s for s in app.selectbox if s.label=='Serviço').set_value('200014104').run()
-     self.assertEqual(next(t for t in app.text_input if t.label=='Preço unitário em reais').value,'12,00')
+     self.assertIn('Valor unitário (R$)',app.dataframe[0].value.columns)
+     self.assertTrue(any(h.value=='Classificação dos serviços TSS' for h in app.subheader))
    for module in ['Painel geral','Fechamento geral']:
     navigate(app,module=module);self.assertFalse(app.exception,module)
 if __name__=='__main__':unittest.main()

@@ -145,7 +145,7 @@ def save_geo(root,month,mode,total,cities,evidence=None):
 
 def geo_summary(c,month,prices):
     r=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
-    if not r:return {'quantity':0,'cents':0,'ready':False,'reason':'Geolocalização não confirmada (zero deve ser informado explicitamente).'}
+    if not r:return {'quantity':0,'unit_cents':prices['geo']['cents'] if 'geo' in prices else None,'cents':0,'ready':False,'reason':'Geolocalização não confirmada (zero deve ser informado explicitamente).'}
     return geo_values(r,contract_policy.policy(c,month),prices.get('geo'))
 
 def geo_values(r,policy,price):
@@ -335,6 +335,11 @@ def _write_change(c,change):
     kind=change.get('kind');effective=change.get('effective','');future(c,effective)
     evidence=change.get('evidence','').strip()
     if not evidence:raise ValueError('Documento/justificativa obrigatório.')
+    if kind=='services':
+        children=change.get('changes',[])
+        if not children or len({(r.get('code'),r.get('effective')) for r in children})!=len(children):raise ValueError('Lote vazio ou serviços repetidos na mesma vigência.')
+        if effective!=min(r.get('effective','') for r in children):raise ValueError('Vigência do lote inconsistente.')
+        return {'services':[_write_change(c,{**r,'kind':'service','evidence':evidence}) for r in children]}
     if kind=='service':
         code=change.get('code','').strip();name=change.get('name','').strip();cents=change.get('cents')
         if not code or not name or type(cents)!=int or cents<0:raise ValueError('Código confirmado, descrição e preço válidos obrigatórios.')

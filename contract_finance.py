@@ -15,10 +15,18 @@ def connect(data):
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,created TEXT NOT NULL,action TEXT NOT NULL,payload TEXT NOT NULL);''')
     return c
 
+def reading_services(units,prices):
+    """Detalha o agregado existente usando a mesma apresentação dos seis serviços."""
+    import queries
+    return [{'code':r['Código'],'name':r['Categoria'],'quantity':r['Quantidade'],'unit_cents':r['unit_cents'],'cents':r['total_cents']} for r in queries.summary({'units':units,'holiday_quantity':units['feriado']},prices)]
+
 def readings(data,month):
     import managerial
     bank=Path(data).resolve()/'contrato.sqlite3'
-    if not bank.exists():return {'cents':0,'closed':False,'revision':None,'reason':'Sem banco de leituras.'}
+    if not bank.exists():
+        import core
+        units={k:0 for k in managerial.UNITS}
+        return {'cents':0,'closed':False,'revision':None,'reason':'Sem banco de leituras.','units':units,'services':reading_services(units,{k:v[2] for k,v in core.CATEGORIES.items()})}
     with closing(managerial.connect(data)) as c:
         row=c.execute('SELECT prices,closed FROM months WHERE month=?',(month,)).fetchone()
         if row:prices=json.loads(row['prices'])
@@ -29,7 +37,8 @@ def readings(data,month):
         sql,args=managerial.aggregate_sql(c,month)
         total=managerial.decorate(c.execute(sql,args).fetchone(),prices)
         revision=c.execute('SELECT revision FROM cache_revision WHERE id=1').fetchone()[0]
-        return {'cents':total['total_cents'],'closed':bool(row and row['closed']),'revision':revision,'holiday_quantity':total['fee'],'units':{k:total[col] for k,col in managerial.UNITS.items()}}
+        units={k:total[col] for k,col in managerial.UNITS.items()}
+        return {'services':reading_services(units,prices),'cents':total['total_cents'],'closed':bool(row and row['closed']),'revision':revision,'holiday_quantity':total['fee'],'units':{k:total[col] for k,col in managerial.UNITS.items()}}
 
 def preview(data,month):
     read=readings(data,month);v=billing.financial(Path(data)/'vistorias',month)

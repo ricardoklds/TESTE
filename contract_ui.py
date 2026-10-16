@@ -6,15 +6,11 @@ import streamlit as st
 import contract_finance as api
 import inspection_billing as billing
 from inspection_module_ui import money,service_frame
-from decimal import Decimal,ROUND_HALF_UP
+from contract_presentation import simulate,compose,table_rows
 
 @st.cache_data(show_spinner=False,max_entries=32)
 def cached_state(data,month,reading_version,inspection_version,closing_version):return api.state(data,month)
 
-def simulate(gross_cents,enabled):
-    """Somente memória; não consulta nem grava o banco financeiro."""
-    deduction=int((Decimal(gross_cents)/100).quantize(Decimal('1'),rounding=ROUND_HALF_UP)) if enabled else 0
-    return {'gross_cents':gross_cents,'deduction_cents':deduction,'net_cents':gross_cents-deduction}
 
 def render(data,month,allow_close=False):
     data=Path(data);root=data/'vistorias';bank=data/'contrato.sqlite3'
@@ -40,9 +36,38 @@ def render(data,month,allow_close=False):
         st.caption('Simulação gerencial. Desligar o controle retira o desconto da visualização; nenhum valor é registrado no fechamento oficial.')
     else:
         cols[0].metric('Fechamento bruto',money(p['gross_cents']));cols[1].metric('Glosa definitiva registrada',money(p['deduction']['cents'] if p['deduction'] else 0));cols[2].metric('Líquido oficial' if p['validated'] else 'Líquido provisório',money(p['net_cents']))
-    with st.expander('Detalhes por categoria'):
-        st.dataframe(service_frame(p['visits']['services']),hide_index=True)
-        st.caption('Geolocalização é contabilizada uma única vez no componente separado acima.')
+    composition=None
+    if allow_close:
+        try:composition=compose(data,p)
+        except ValueError as e:st.warning(str(e))
+        if composition:
+            st.metric('Subtotal informativo · Vistorias + Geolocalização',money(composition['visits_geo_cents']))
+            st.caption('Subtotal informativo; não é somado novamente ao fechamento bruto.')
+        with st.expander('Composição do Faturamento'):
+            if composition:
+                st.dataframe(pd.DataFrame(table_rows(composition)),hide_index=True)
+                st.dataframe(pd.DataFrame([{'Componente':k,'Subtotal':money(v)} for k,v in composition['subtotals'].items()]),hide_index=True)
+                st.caption('Quantidades são faturáveis por serviço. Adicionais podem se acumular: não somar como fornecimentos distintos ou registros operacionais.')
+                if not composition['complete']:st.warning(composition['notes'][0])
+    else:
+        with st.expander('Detalhes por categoria'):
+            st.dataframe(service_frame(p['visits']['services']),hide_index=True)
+            st.caption('Geolocalização é contabilizada uma única vez no componente separado acima.')
+    if allow_close and composition:
+        formats=st.selectbox('Formato da prévia',['PDF e Excel','PDF','Excel'])
+        preview_scope=(month,billing.digest(p),enabled,formats)
+        if st.button('Gerar relatório de prévia'):
+            import contract_reports
+            with st.spinner('Preparando prévia gerencial dos totais existentes…'):
+                artifacts={}
+                if formats in ('PDF e Excel','PDF'):artifacts['PDF']=contract_reports.pdf(composition,enabled)
+                if formats in ('PDF e Excel','Excel'):artifacts['Excel']=contract_reports.excel(composition,enabled)
+                st.session_state['managerial_contract_preview']=(preview_scope,artifacts)
+        saved_preview=st.session_state.get('managerial_contract_preview')
+        if saved_preview and saved_preview[0]==preview_scope:
+            st.caption('PRÉVIA — NÃO APROVADA. A exportação não altera o status dos fechamentos.')
+            for kind,content in saved_preview[1].items():
+                st.download_button('Baixar prévia '+kind,content,file_name='previa-contrato-'+month+('.pdf' if kind=='PDF' else '.xlsx'),mime='application/pdf' if kind=='PDF' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',on_click='ignore')
     if not p['readings']['closed']:st.info('Leituras ainda não estão fechadas na competência. Utilize o módulo de Leituras.')
     if not p['visits']['approved']:st.info('Vistorias/Geolocalização ainda não foram aprovadas após conciliação.')
     if not allow_close:return

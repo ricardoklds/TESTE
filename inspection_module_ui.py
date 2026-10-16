@@ -154,24 +154,9 @@ def catalog(root,month,rules_only=False):
     services=api.service_list(root,month)
     state=cached_catalog(root,api.revision(root))
     if not rules_only:
-        st.dataframe(service_frame(services),hide_index=True)
-        st.caption('Preços de categoria e preços específicos por TSS são distintos. Alterar o preço da categoria afeta todas as descrições que a seguem; preço específico afeta somente o TSS. Não altera Leituras.')
-        st.info('Correção confirmada: VERIFICAR SERVIÇO EXECUTADO pertence a Predial (200014106, R$ 22,50). Em instalações anteriores, selecione esse TSS, escolha Predial com vigência 2026-09, confira o impacto e confirme. Meses aprovados permanecem bloqueados.')
-        selected=st.selectbox('Serviço',['Novo serviço']+[s['code'] for s in services],format_func=lambda code:next((s['name']+' · '+code for s in services if s['code']==code),code))
-        old=next((s for s in services if s['code']==selected),None)
-        with st.form('price_service'):
-            code=st.text_input('Código contratual confirmado',value=old['code'] if old else '')
-            name=st.text_input('Descrição contratual',value=old['name'] if old else '')
-            price=st.text_input('Preço unitário em reais',value=f"{old['cents']/100:.2f}".replace('.',',') if old else '')
-            effective=st.text_input('Vigência (AAAA-MM)',value=month)
-            active=st.checkbox('Serviço ativo',value=bool(old['active']) if old else True)
-            evidence=st.text_input('Documento/justificativa do preço')
-            if st.form_submit_button('Calcular impacto do serviço/preço'):
-                try:
-                    change={'kind':'service','code':code,'name':name,'effective':effective,'cents':cents(price),'active':active,'evidence':evidence}
-                    with st.spinner('Simulando em transação reversível…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
-                except (ValueError,InvalidOperation) as e:st.error(str(e))
-        st.subheader('Classificação das descrições originais')
+        import inspection_price_editor
+        inspection_price_editor.render(root,month,services)
+        st.subheader('Classificação dos serviços TSS')
         options=sorted({r['tss'] for r in state['rules']})
         choice=st.selectbox('Descrição TSS para editar',['Nova descrição']+options)
         candidates=[r for r in state['rules'] if r['tss']==choice and r['effective']<=month and not r['cause'] and not r['form']]
@@ -216,10 +201,13 @@ def catalog(root,month,rules_only=False):
             for r in plan['impact']:
                 st.write(r['month']);st.dataframe(service_frame(r['before']['services']),hide_index=True);st.dataframe(service_frame(r['after']['services']),hide_index=True)
         with st.form('confirm_catalog_change'):
+            deactivating=plan['change']['kind']=='services' and any(not r['active'] for r in plan['change']['changes'])
+            if deactivating:st.warning('A proposta desativa serviços. Seus históricos não serão excluídos.')
             yes=st.checkbox('Conferi a vigência e o impacto acima e confirmo esta alteração do catálogo')
+            deactivate_yes=st.checkbox('Confirmo a desativação dos serviços indicados') if deactivating else True
             submit=st.form_submit_button('Confirmar alteração após impacto')
         if submit:
-            try:api.confirm_change(root,plan,yes);st.session_state.pop('catalog_plan',None);st.rerun()
+            try:api.confirm_change(root,plan,yes and deactivate_yes);st.session_state.pop('catalog_plan',None);st.rerun()
             except ValueError as e:st.error(str(e))
         if st.button('Cancelar alteração'):st.session_state.pop('catalog_plan',None);st.rerun()
     page=st.number_input('Página do catálogo',min_value=1,step=1)
