@@ -14,21 +14,19 @@ def render(data,month):
         allowed=st.text_area('Municípios autorizados (um por linha)',value='\n'.join(policy['allowed']))
         excluded=st.text_area('Municípios fora do contrato (um por linha)',value='\n'.join(policy['excluded']))
         effective=st.text_input('Início de vigência (AAAA-MM)',value=month)
-        evidence=st.text_input('Documento e justificativa do escopo')
         if st.form_submit_button('Calcular impacto do escopo'):
             try:
-                change={'kind':'scope','allowed':allowed.splitlines(),'excluded':excluded.splitlines(),'effective':effective,'evidence':evidence}
+                change={'kind':'scope','allowed':allowed.splitlines(),'excluded':excluded.splitlines(),'effective':effective}
                 with st.spinner('Calculando impacto financeiro e operacional…'):st.session_state['contract_scope_plan']=api.prepare_change(root,change)
             except ValueError as e:st.error(str(e))
     plan=st.session_state.get('contract_scope_plan')
     if plan and plan['root']==str(Path(root).resolve()):
-        st.write('Prévia: nenhuma mudança de escopo foi salva.');st.write(plan['change'])
+        st.write('Prévia: nenhuma mudança de escopo foi salva.');st.write({k:v for k,v in plan['change'].items() if k!='evidence'})
         st.dataframe(pd.DataFrame([{'Competência':r['month'],'Vistorias antes':money(r['before']['inspection_cents']),'Vistorias depois':money(r['after']['inspection_cents']),'Diferença em centavos':r['delta_cents'],'Ocorrências contratuais antes':r['before']['deadline']['total'],'Ocorrências contratuais depois':r['after']['deadline']['total'],'% prazo antes':r['before']['deadline']['percent'],'% prazo depois':r['after']['deadline']['percent']} for r in plan['impact']]),hide_index=True)
         with st.form('confirm_scope'):
-            yes=st.checkbox('Confirmo os municípios, a vigência e o impacto contratual')
             submit=st.form_submit_button('Confirmar escopo')
         if submit:
-            try:api.confirm_change(root,plan,yes);st.session_state.pop('contract_scope_plan',None);st.rerun()
+            try:api.confirm_change(root,plan,True);st.session_state.pop('contract_scope_plan',None);st.rerun()
             except ValueError as e:st.error(str(e))
     page=st.number_input('Página do histórico de escopo',min_value=1,step=1)
     with api.connect(root) as c:

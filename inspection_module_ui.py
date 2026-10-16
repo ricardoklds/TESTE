@@ -97,11 +97,9 @@ def render(data,month,page):
     st.caption('Até 50 registros por página; os valores brutos continuam preservados no banco operacional e nos originais.')
     if page=='Faturamento de Vistorias' and not p['approved']:
         with st.form('approve_inspection'):
-            evidence=st.text_input('Documento e responsável pela conciliação')
-            confirmed=st.checkbox('Conferi o relatório, as diferenças e o escopo, e confirmo o faturamento e a geolocalização desta competência.')
-            submit=st.form_submit_button('Aprovar faturamento mensal',disabled=not p['ready'] or not p['geo']['ready'] or not prepared or prepared[0]!=scope)
+            submit=st.form_submit_button('Aprovar faturamento mensal',disabled=not p['ready'] or not p['geo']['ready'])
         if submit:
-            try:api.approve(root,month,prepared[2],evidence,confirmed);st.rerun()
+            try:api.approve(root,month,p['fingerprint'],confirmed=True);st.rerun()
             except ValueError as e:st.error(str(e))
     if st.button('Preparar catálogo para validação independente'):
         st.session_state['inspection_catalog_export']=(month,revision,json.dumps(api.export_period_catalog(root,month),ensure_ascii=False,indent=2))
@@ -113,13 +111,9 @@ def render(data,month,page):
             decision=st.selectbox('Decisão individual',['Excluir','Cobrar'])
             services=[s for s in api.service_list(root,month) if s['code']!='geo'];codes=[s['code'] for s in services]
             code=st.selectbox('Código contratual',codes)
-            evidence=st.text_input('Justificativa/documento da análise individual')
-            yes=st.checkbox('Confirmo esta decisão apenas para o registro e competência selecionados')
             if st.form_submit_button('Registrar conferência'):
-                if not yes:st.error('Confirmação explícita obrigatória.')
-                else:
-                    try:api.review(root,id,month,decision,code,evidence);st.rerun()
-                    except ValueError as e:st.error(str(e))
+                try:api.review(root,id,month,decision,code);st.rerun()
+                except ValueError as e:st.error(str(e))
 
 def import_panel(root):
     import inspections
@@ -131,8 +125,7 @@ def import_panel(root):
         except Exception as e:st.error(str(e));return
         if not options:st.error('Nenhuma aba de registros de vistorias válida.');return
         sheet=st.selectbox('Aba original',options,index=options.index('Número OS') if 'Número OS' in options else 0)
-        yes=st.checkbox('Confirmo esta aba original. Escopo e critérios comerciais vigentes serão aplicados; serviços desconhecidos permanecem pendentes.')
-        if st.button('Importar Vistorias',disabled=not yes):
+        if st.button('Importar Vistorias'):
             try:
                 with st.status('Importando em lotes…') as status:
                     progress=st.empty();n=inspections.import_file(root,content,upload.name,sheet,lambda n:progress.write(f'{n:,} linhas processadas'))
@@ -172,10 +165,10 @@ def catalog(root,month,rules_only=False):
             rate=max(custom,key=lambda o:o['effective'])['cents'] if custom else None
             unit=st.text_input('Preço específico deste TSS (R$; vazio segue a categoria)',value=f'{rate/100:.2f}'.replace('.',',') if rate is not None else '')
             st.caption('Ex.: categoria Predial e preço específico 12,00 altera só esta descrição. Deixar vazio volta a seguir a tarifa da categoria. Preços específicos abrangem o TSS inteiro, não apenas a causa/formulário.')
-            effective=st.text_input('Competência inicial da classificação',value=month);evidence=st.text_input('Documento/justificativa da classificação')
+            effective=st.text_input('Competência inicial da classificação',value=month)
             if st.form_submit_button('Calcular impacto da classificação'):
                 try:
-                    change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None,'evidence':evidence}
+                    change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None}
                     with st.spinner('Calculando impacto das competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
                 except (ValueError,InvalidOperation) as e:st.error(str(e))
     if rules_only:
@@ -187,15 +180,14 @@ def catalog(root,month,rules_only=False):
         with st.form('billing_mode'):
             mode=st.selectbox('Critério de cobrança',list(inspection_contract.LABELS),index=list(inspection_contract.LABELS).index(policy['modes'].get(mode_code,'manual')),format_func=lambda v:inspection_contract.LABELS[v])
             effective=st.text_input('Vigência do critério',value=month)
-            evidence=st.text_input('Justificativa/documento do critério')
             if st.form_submit_button('Calcular impacto do critério'):
                 try:
-                    with st.spinner('Simulando critérios e competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,{'kind':'billing_mode','code':mode_code,'mode':mode,'effective':effective,'evidence':evidence})
+                    with st.spinner('Simulando critérios e competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,{'kind':'billing_mode','code':mode_code,'mode':mode,'effective':effective})
                 except ValueError as e:st.error(str(e))
     plan=st.session_state.get('catalog_plan')
     if plan and plan['root']==str(Path(root).resolve()) and (plan['change']['kind']=='billing_mode')==rules_only:
         st.subheader('Prévia de impacto — nada foi salvo')
-        st.write(plan['change'])
+        st.write({k:v for k,v in plan['change'].items() if k!='evidence'})
         st.dataframe(pd.DataFrame([{'Competência':r['month'],'Vistorias antes':money(r['before']['inspection_cents']),'Vistorias depois':money(r['after']['inspection_cents']),'Geolocalização antes':money(r['before']['geo_cents']),'Geolocalização depois':money(r['after']['geo_cents']),'Variação':money(r['delta_cents']),'Pendências antes':r['before']['pending'],'Pendências depois':r['after']['pending']} for r in plan['impact']]),hide_index=True)
         with st.expander('Quantidades e valores por categoria antes/depois'):
             for r in plan['impact']:
@@ -203,11 +195,9 @@ def catalog(root,month,rules_only=False):
         with st.form('confirm_catalog_change'):
             deactivating=plan['change']['kind']=='services' and any(not r['active'] for r in plan['change']['changes'])
             if deactivating:st.warning('A proposta desativa serviços. Seus históricos não serão excluídos.')
-            yes=st.checkbox('Conferi a vigência e o impacto acima e confirmo esta alteração do catálogo')
-            deactivate_yes=st.checkbox('Confirmo a desativação dos serviços indicados') if deactivating else True
             submit=st.form_submit_button('Confirmar alteração após impacto')
         if submit:
-            try:api.confirm_change(root,plan,yes and deactivate_yes);st.session_state.pop('catalog_plan',None);st.rerun()
+            try:api.confirm_change(root,plan,True);st.session_state.pop('catalog_plan',None);st.rerun()
             except ValueError as e:st.error(str(e))
         if st.button('Cancelar alteração'):st.session_state.pop('catalog_plan',None);st.rerun()
     page=st.number_input('Página do catálogo',min_value=1,step=1)

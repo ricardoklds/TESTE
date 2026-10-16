@@ -73,29 +73,15 @@ def render(data,month,allow_close=False):
     if not allow_close:return
     if not p['validated']:
         with st.form('approve_contract'):
-            evidence=st.text_input('Documento e responsável pelo fechamento geral');yes=st.checkbox('Confirmo a consolidação mensal completa e validada')
             submit=st.form_submit_button('Validar Fechamento Geral',disabled=not p['ready'])
         if submit:
-            try:api.approve(data,month,billing.digest({k:v for k,v in p.items() if k not in ('validated','deduction','net_cents')}),evidence,yes);st.rerun()
+            try:api.approve(data,month,billing.digest({k:v for k,v in p.items() if k not in ('validated','deduction','net_cents')}),confirmed=True);st.rerun()
             except ValueError as e:st.error(str(e))
     else:
         with st.expander('Registro definitivo de glosa · fechamento oficial'):
             st.write('Glosa definitiva registrada: '+money(p['deduction']['cents'] if p['deduction'] else 0))
             st.write('Líquido oficial: '+money(p['net_cents']))
-            st.caption('Esta área é independente da simulação e mantém a confirmação documental do mecanismo definitivo.')
-            snapshot={k:v for k,v in p.items() if k not in ('validated','deduction','net_cents')};deadline=p['deadline']
-            eligible=deadline['total'] and not deadline['met'] and not deadline['pending']
-            if eligible:st.warning(f"Pontualidade: {deadline['percent']:.2f}%. Possível glosa de 1% sobre o Fechamento Geral. Nenhuma aplicação automática.")
-            else:st.info('Sem condição apurada para glosa definitiva (meta atingida ou prazo não validado).')
-            if st.button('Aplicar multa',disabled=not eligible or p['deduction'] is not None):st.session_state['contract_fine_scope']=(month,billing.digest(snapshot))
-            if st.session_state.get('contract_fine_scope')==(month,billing.digest(snapshot)) and not p['deduction']:
-                st.write('Base total validada: '+money(p['gross_cents']))
-                with st.form('contract_fine_confirm'):
-                    evidence=st.text_input('Documento e justificativa da glosa');yes=st.checkbox('Confirmo aplicar e registrar glosa de 1% sobre o Fechamento Geral validado')
-                    submit=st.form_submit_button('Confirmar aplicação da multa')
-                if submit:
-                    try:api.apply_fine(data,month,billing.digest(snapshot),evidence,yes);st.session_state.pop('contract_fine_scope',None);st.rerun()
-                    except ValueError as e:st.error(str(e))
+            st.caption('Histórico somente para consulta. O controle de 1% acima é apenas uma simulação gerencial.')
     st.caption('O relatório do contrato preserva os valores oficiais; não incorpora a glosa simulada.')
     if st.button('Preparar relatório do contrato'):
         from io import BytesIO

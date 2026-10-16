@@ -78,9 +78,9 @@ def prepare(c,data):
         c.execute('UPDATE cache_revision SET revision=revision+1 WHERE id=1');c.execute('PRAGMA user_version=5');c.commit()
     except Exception:c.rollback();raise
 
-def prove_brazil(import_id,evidence):
+def prove_brazil(import_id,evidence=None):
     import storage
-    if not evidence.strip():raise ValueError('Informe a evidência que comprova execução no Brasil.')
+    evidence=str(evidence or '').strip() or 'Confirmação manual da execução no Brasil.'
     with storage.connect() as c:
         c.execute('BEGIN IMMEDIATE')
         r=c.execute('SELECT month,name FROM imports WHERE id=?',(import_id,)).fetchone()

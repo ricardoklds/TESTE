@@ -1,5 +1,6 @@
 """Apuração operacional de prazo. Banco próprio; não modifica faturamento de leituras."""
 import hashlib
+from audit_text import audit_text
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -127,8 +128,9 @@ def summary(root,start,end,policy=None):
     return decorate(total),[decorate(r) for r in rows],pending
 
 
-def fine(root,start,end,base_cents,evidence,confirmed=False,expected_version=None):
-    if not confirmed or not evidence.strip() or type(base_cents)!=int or base_cents<=0:raise ValueError('Confirmação, base positiva e documento do fechamento são obrigatórios.')
+def fine(root,start,end,base_cents,evidence=None,confirmed=False,expected_version=None):
+    evidence=audit_text(evidence)
+    if not confirmed or type(base_cents)!=int or base_cents<=0:raise ValueError('Confirmação e base positiva obrigatórias.')
     # Ler índice e gravar evento na mesma transação; não altera fechamento oficial.
     c=connect(root)
     try:

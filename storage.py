@@ -1,3 +1,4 @@
+from audit_text import audit_text
 import hashlib
 import json
 import os
@@ -149,9 +150,8 @@ def conflicts(rows):
             groups.setdefault(key, []).append(r['id'])
     return [ids for ids in groups.values() if len(ids)>1]
 
-def exclude(month, row_id, reason, excluded=True):
-    if not reason.strip():
-        raise ValueError('Informe o motivo para registrar a decisão.')
+def exclude(month, row_id, reason=None, excluded=True):
+    reason=audit_text(reason)
     with connect() as c:
         c.execute('BEGIN IMMEDIATE');ensure_open(c,month)
         row=c.execute('SELECT import_deleted FROM records WHERE id=? AND month=?',(row_id,month)).fetchone()
@@ -162,8 +162,7 @@ def exclude(month, row_id, reason, excluded=True):
         c.execute('INSERT INTO audit(month,action,detail,created_at) VALUES (?,?,?,?)', (month,'Exclusão' if excluded else 'Reinclusão',f'ID {row_id}: {reason}',now()))
 
 def close_month(month, closed=True, reason=''):
-    if not closed and not reason.strip():
-        raise ValueError('Informe o motivo da reabertura.')
+    reason=audit_text(reason)
     with connect() as c:
         c.execute('BEGIN IMMEDIATE')
         status=c.execute('SELECT COUNT(*) active,COALESCE(SUM(errors>0),0) errors FROM record_metrics WHERE month=? AND excluded=0 AND import_deleted=0',(month,)).fetchone()
@@ -210,8 +209,8 @@ def import_preview(month, import_id, connection=None):
     finally:
         if connection is None:c.close()
 
-def set_import_deleted(month, import_id, deleted, reason, expected_version=None):
-    if not reason.strip():raise ValueError('Informe a justificativa.')
+def set_import_deleted(month, import_id, deleted, reason=None, expected_version=None):
+    reason=audit_text(reason)
     with connect() as c:
         c.execute('BEGIN IMMEDIATE');ensure_open(c,month)
         preview=import_preview(month,import_id,c)

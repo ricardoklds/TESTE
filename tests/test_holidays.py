@@ -116,7 +116,6 @@ class HolidayTests(unittest.TestCase):
         self.assertFalse(at.exception);self.assertEqual(len(holidays.calendar()),1)
         next(t for t in at.text_input if t.label=='Município confirmado').set_value('Cidade A')
         next(t for t in at.text_input if t.label=='UF confirmada').set_value('SP')
-        next(c for c in at.checkbox if c.label.startswith('Confirmo que esta origem')).check()
         next(b for b in at.button if b.label=='Salvar identificação municipal').click().run()
         self.assertFalse(at.exception);self.assertEqual(self.qty(),1)
         navigate(at,module='Leituras')

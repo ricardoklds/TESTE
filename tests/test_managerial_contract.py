@@ -9,7 +9,6 @@ import contract_reports as reports
 from contract_presentation import compose,table_rows
 from inspection_price_editor import changes_from_table,price_cents
 from ui_navigation import navigate
-
 class ManagerialContract(unittest.TestCase):
  setUp=fixtures.SimpleInterface.setUp
  tearDown=fixtures.SimpleInterface.tearDown
@@ -64,16 +63,15 @@ class ManagerialContract(unittest.TestCase):
   with self.app() as a:
    navigate(a,'Serviços e Preços de Vistorias');key=next(k for k in a.session_state.filtered_state if str(k).startswith('prices:'))
    a.session_state[key]={'edited_rows':{0:{'Valor unitário (R$)':13.0,'Situação':'Inativo'}},'added_rows':[],'deleted_rows':[]}
-   next(b for b in a.button if b.label=='Salvar alterações').click().run();self.assertFalse(a.exception)
-   next(v for v in a.checkbox if v.label.startswith('Conferi a vigência')).check();next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],3450)
-   next(v for v in a.checkbox if v.label=='Confirmo a desativação dos serviços indicados').check();next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception);self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],2250)
+   next(b for b in a.button if b.label=='Salvar alterações').click().run();self.assertFalse(a.exception);self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],3450)
+   next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception);self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],2250)
  def test_ui_add_service_and_no_current_mapping_automatically(self):
   self.load()
   with self.app() as a:
    navigate(a,'Serviços e Preços de Vistorias');next(b for b in a.button if b.label=='Adicionar serviço').click().run()
    next(v for v in a.text_input if v.label=='Código do novo serviço').set_value('TESTE-123');next(v for v in a.text_input if v.label=='Descrição do novo serviço').set_value('Serviço sintético')
    next(v for v in a.number_input if v.label=='Valor unitário do novo serviço (R$)').set_value(5.25);next(b for b in a.button if b.label=='Salvar novo serviço').click().run();self.assertFalse(a.exception)
-   next(v for v in a.checkbox if v.label.startswith('Conferi a vigência')).check();next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception)
+   next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception)
    self.assertEqual(next(r['cents'] for r in bill.service_list(self.root,'2026-09') if r['code']=='TESTE-123'),525);self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],3450)
  def test_composition_ten_services_and_informative_subtotal_not_added_twice(self):
   self.load();self.geo();self.readings();p=contract.state(self.data,'2026-09');before=self.bank_hashes();x=compose(self.data,p)

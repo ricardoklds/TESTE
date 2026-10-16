@@ -5,6 +5,7 @@ import json,sqlite3
 from decimal import Decimal,ROUND_HALF_UP
 import inspection_billing as billing
 import inspections
+from audit_text import audit_text
 
 def connect(data):
     root=Path(data)/'contrato_geral';root.mkdir(parents=True,exist_ok=True)
@@ -51,8 +52,9 @@ def state(data,month):
     value['validated']=bool(row);value['deduction']=json.loads(ded[0]) if ded else None
     value['net_cents']=value['gross_cents']-(value['deduction']['cents'] if ded else 0);return value
 
-def approve(data,month,expected,evidence,confirmed=False):
-    if not confirmed or not evidence.strip():raise ValueError('Confirmação e documento obrigatórios.')
+def approve(data,month,expected,evidence=None,confirmed=False):
+    evidence=audit_text(evidence)
+    if not confirmed:raise ValueError('Confirmação da operação obrigatória.')
     with connect(data) as c:
         c.execute('BEGIN IMMEDIATE')
         if c.execute('SELECT 1 FROM closings WHERE month=?',(month,)).fetchone():raise ValueError('Contrato já validado; versão anterior preservada.')
@@ -65,8 +67,9 @@ def approve(data,month,expected,evidence,confirmed=False):
         c.execute('INSERT INTO audit(created,action,payload) VALUES(?,?,?)',(billing.now(),'Validar contrato',json.dumps({'month':month,'snapshot':p,'evidence':evidence},ensure_ascii=False)))
     return p
 
-def apply_fine(data,month,expected,evidence,confirmed=False):
-    if not confirmed or not evidence.strip():raise ValueError('Confirmação explícita e justificativa obrigatórias.')
+def apply_fine(data,month,expected,evidence=None,confirmed=False):
+    evidence=audit_text(evidence)
+    if not confirmed:raise ValueError('Confirmação da operação obrigatória.')
     with connect(data) as c:
         c.execute('BEGIN IMMEDIATE');row=c.execute('SELECT payload FROM closings WHERE month=?',(month,)).fetchone()
         if not row:raise ValueError('Fechamento Geral ainda não validado.')

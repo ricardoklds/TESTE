@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 import calendar, hashlib, json, sqlite3, unicodedata, uuid
 import inspections
+from audit_text import audit_text
 import inspection_contract as contract_policy
 
 SERVICES=(('200014105','Vistoria para aprovação de ligação',2250),('200014106','Vistoria predial',2250),('200014104','Vistoria de atualização cadastral',1200),('geo','Geolocalização',1200))
@@ -96,9 +97,10 @@ def service_list(root,month):
     with connect(root) as c:return [dict(r) for r in c.execute('''SELECT s.code,s.name,p.effective,p.cents,p.active FROM services s JOIN prices p ON p.code=s.code
       WHERE p.effective=(SELECT MAX(x.effective) FROM prices x WHERE x.code=s.code AND x.effective<=?) ORDER BY s.code''',(month,))]
 
-def save_service(root,code,name,effective,cents,active,evidence):
+def save_service(root,code,name,effective,cents,active,evidence=None):
+    evidence=audit_text(evidence)
     code=code.strip()
-    if not code or not name.strip() or type(cents)!=int or cents<0 or not evidence.strip():raise ValueError('Código contratual confirmado, descrição, preço e justificativa obrigatórios.')
+    if not code or not name.strip() or type(cents)!=int or cents<0:raise ValueError('Código contratual, descrição e preço válidos obrigatórios.')
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE');future(c,effective)
         existing=c.execute('SELECT name FROM services WHERE code=?',(code,)).fetchone()
@@ -108,8 +110,9 @@ def save_service(root,code,name,effective,cents,active,evidence):
         c.execute('INSERT OR REPLACE INTO prices VALUES(?,?,?,?)',(code.strip(),effective,cents,int(active)))
         audit(c,'Preço/vigência',{'code':code,'name':name,'effective':effective,'cents':cents,'active':bool(active),'evidence':evidence,'before':dict(before) if before else None})
 
-def save_rule(root,tss,cause,form,effective,decision,code,evidence):
-    if decision not in ('Cobrar','Excluir','Pendente') or not norm(tss) or not evidence.strip():raise ValueError('TSS, decisão e comprovação obrigatórios.')
+def save_rule(root,tss,cause,form,effective,decision,code,evidence=None):
+    evidence=audit_text(evidence)
+    if decision not in ('Cobrar','Excluir','Pendente') or not norm(tss):raise ValueError('TSS e decisão válidos obrigatórios.')
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE');future(c,effective)
         if decision=='Cobrar' and (code=='geo' or not c.execute('SELECT 1 FROM services WHERE code=?',(code,)).fetchone()):raise ValueError('Serviço contratual de vistoria inválido.')
@@ -118,8 +121,9 @@ def save_rule(root,tss,cause,form,effective,decision,code,evidence):
         c.execute('INSERT OR REPLACE INTO rules(tss,cause,form,effective,code,decision,evidence) VALUES(:tss,:cause,:form,:effective,:code,:decision,:evidence)',payload)
         audit(c,'Classificação TSS',{**payload,'before':dict(before) if before else None})
 
-def review(root,visit_id,month,decision,code,evidence):
-    if decision not in ('Cobrar','Excluir') or not evidence.strip():raise ValueError('Decisão e justificativa obrigatórias.')
+def review(root,visit_id,month,decision,code,evidence=None):
+    evidence=audit_text(evidence)
+    if decision not in ('Cobrar','Excluir'):raise ValueError('Decisão válida obrigatória.')
     first,last=month_bounds(month)
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE');editable(c,month)
@@ -131,7 +135,7 @@ def review(root,visit_id,month,decision,code,evidence):
 
 def save_geo(root,month,mode,total,cities,evidence=None):
     if mode not in ('Total mensal','Por município'):raise ValueError('Modo de lançamento inválido.')
-    evidence=(evidence or '').strip() or 'Lançamento manual pela interface; documento não exigido.'
+    evidence=audit_text(evidence)
     if total is not None and (type(total)!=int or total<0):raise ValueError('Quantidade total inválida.')
     if any(not k.strip() or type(v)!=int or v<0 for k,v in cities.items()):raise ValueError('Município e quantidades inteiras não negativas obrigatórios.')
     names=[norm(k) for k in cities]
@@ -250,8 +254,9 @@ def preview(root,month,connection=None):
 def service_list_connection(c,month):
     return {r['code']:dict(r) for r in c.execute('''SELECT s.code,s.name,p.* FROM services s JOIN prices p ON p.code=s.code WHERE p.effective=(SELECT MAX(effective) FROM prices x WHERE x.code=s.code AND x.effective<=?)''',(month,))}
 
-def approve(root,month,expected,evidence,confirmed=False):
-    if not confirmed or not evidence.strip():raise ValueError('Conciliação e confirmação explícita obrigatórias.')
+def approve(root,month,expected,evidence=None,confirmed=False):
+    evidence=audit_text(evidence)
+    if not confirmed:raise ValueError('Confirmação da operação obrigatória.')
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE');editable(c,month);p=preview(root,month,c)
         if p['fingerprint']!=expected:raise ValueError('Dados alterados; gere novamente a conciliação.')
@@ -333,8 +338,7 @@ def catalog_state(root):
 def _write_change(c,change):
     """Aplicação comum à simulação e à confirmação; sem commits intermediários."""
     kind=change.get('kind');effective=change.get('effective','');future(c,effective)
-    evidence=change.get('evidence','').strip()
-    if not evidence:raise ValueError('Documento/justificativa obrigatório.')
+    evidence=audit_text(change.get('evidence'))
     if kind=='services':
         children=change.get('changes',[])
         if not children or len({(r.get('code'),r.get('effective')) for r in children})!=len(children):raise ValueError('Lote vazio ou serviços repetidos na mesma vigência.')
@@ -405,6 +409,7 @@ def _impact(c,root,change):
 
 def prepare_change(root,change):
     """Simulação exata em savepoint. Não aprova mês nem persiste regra/preço."""
+    change={**change,'evidence':audit_text(change.get('evidence'))}
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE')
         try:

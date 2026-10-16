@@ -94,8 +94,7 @@ def render(month,page,parsed_file,reference):
                     mapping[key]=None if chosen=='Não disponível' else chosen
             st.caption('* Obrigatório. Os dados não são alterados pelo mapeamento.')
             st.dataframe(pd.DataFrame([r['raw'] for r in p['records'][:15]]).astype(str),hide_index=True)
-            confirmed=st.checkbox(f'Confirmo o mapeamento e o mês {month}. Incluir sem data, releituras e adicionais em faturas retidas, conforme regras confirmadas.')
-            if st.button('Processar e importar',type='primary',disabled=not confirmed or bool(info['closed'])):
+            if st.button('Processar e importar',type='primary',disabled=bool(info['closed'])):
                 try:
                     with st.status('Preservando o original e processando em lotes…') as status:
                         progress=st.empty()
@@ -131,35 +130,27 @@ def render(month,page,parsed_file,reference):
                            f"{preview['record_count']} registros vinculados; {preview['potential_count']} registros sairão/voltarão ao fechamento. "
                            f"Impacto estimado: {'−' if pending['deleted'] else '+'}{money(preview['potential_cents'])}. Outros arquivos e meses serão preservados.")
                 with st.form('confirm_import_'+str(pending['id'])+'_'+preview['version']):
-                    reason=st.text_input('Justificativa da exclusão ou restauração')
-                    confirmed=st.checkbox(f'Confirmo explicitamente a {action} desta importação.')
                     submit=st.form_submit_button('Confirmar operação',disabled=bool(info['closed']))
                 if submit:
-                    if not confirmed:st.error('Marque a confirmação explícita antes de prosseguir.')
-                    else:
-                        try:
-                            storage.set_import_deleted(month,pending['id'],pending['deleted'],reason,preview['version'])
-                            st.session_state.pop('exports',None);st.session_state.pop('import_action',None)
-                            st.session_state['import_message']='Importação excluída do fechamento.' if pending['deleted'] else 'Importação restaurada sem duplicidades.'
-                            st.rerun()
-                        except ValueError as e:st.error(str(e))
+                    try:
+                        storage.set_import_deleted(month,pending['id'],pending['deleted'],expected_version=preview['version'])
+                        st.session_state.pop('exports',None);st.session_state.pop('import_action',None)
+                        st.session_state['import_message']='Importação excluída do fechamento.' if pending['deleted'] else 'Importação restaurada sem duplicidades.'
+                        st.rerun()
+                    except ValueError as e:st.error(str(e))
                 if st.button('Cancelar operação'):
                     st.session_state.pop('import_action',None);st.rerun()
             with st.expander('Histórico de exclusões e restaurações'):
                 st.dataframe(pd.DataFrame([r for r in storage.audit(month) if r['action'] in ('Excluir importação','Restaurar importação')]),hide_index=True)
-            st.subheader('Comprovação de execução no Brasil')
-            st.caption('Use apenas quando o arquivo tiver comprovação documental brasileira e não for possível resolver cada município. A comprovação habilita somente feriados nacionais; não preenche município ou UF. Não confirme apenas por haver um prefixo ATC desconhecido.')
+            st.subheader('País da execução')
+            st.caption('Confirme somente se souber com segurança que a execução ocorreu no Brasil e não for possível resolver cada município. A confirmação habilita somente feriados nacionais; não preenche município ou UF. Não confirme apenas por haver um prefixo ATC desconhecido.')
             entries=storage.imports(month)
             if entries:
                 with st.form('brazil_execution_proof'):
-                    selected_id=st.selectbox('Importação com execução comprovada',[e['id'] for e in entries],format_func=lambda x:next(e['name']+' · '+e['sheet'] for e in entries if e['id']==x))
-                    evidence=st.text_input('Referência ou descrição da evidência documental')
-                    confirmed_brazil=st.checkbox('Conferi a documentação e confirmo que esta execução ocorreu no Brasil')
-                    if st.form_submit_button('Registrar comprovação brasileira',disabled=bool(info['closed'])):
-                        if not confirmed_brazil:st.error('É necessária confirmação explícita baseada em documentação.')
-                        else:
-                            try:localities.prove_brazil(selected_id,evidence);st.session_state.pop('exports',None);st.rerun()
-                            except ValueError as e:st.error(str(e))
+                    selected_id=st.selectbox('Importação',[e['id'] for e in entries],format_func=lambda x:next(e['name']+' · '+e['sheet'] for e in entries if e['id']==x))
+                    if st.form_submit_button('Confirmar execução no Brasil',disabled=bool(info['closed'])):
+                        try:localities.prove_brazil(selected_id);st.session_state.pop('exports',None);st.rerun()
+                        except ValueError as e:st.error(str(e))
     
     elif page=='Fechamento mensal':
         metrics();st.dataframe(summary_frame(),hide_index=True,width='stretch')
@@ -222,21 +213,18 @@ def render(month,page,parsed_file,reference):
             row=queries.record(month,row_id)
             if row:
                 st.dataframe(pd.DataFrame({'Coluna':list(row['raw']),'Valor original':[str(v) if v is not None else '' for v in row['raw'].values()]}),hide_index=True)
-                reason=st.text_input('Justificativa da decisão')
                 if row['import_deleted']:st.info('Registro de importação excluída. Restaure o arquivo na tela Importar planilhas.')
                 if st.button('Reincluir registro' if row['excluded'] else 'Excluir do faturamento',disabled=bool(info['closed'] or row['import_deleted'])):
-                    try:storage.exclude(month,row_id,reason,not bool(row['excluded']));st.session_state.pop('exports',None);st.rerun()
+                    try:storage.exclude(month,row_id,excluded=not bool(row['excluded']));st.session_state.pop('exports',None);st.rerun()
                     except ValueError as e:st.error(str(e))
         if info['closed']:
             st.success(f"Fechamento registrado em UTC: {info['closed_at']}. Preços e importações bloqueados.")
-            reason=st.text_input('Motivo de reabertura')
             if st.button('Reabrir mês'):
-                try:storage.close_month(month,False,reason);st.session_state.pop('exports',None);st.rerun()
+                try:storage.close_month(month,False);st.session_state.pop('exports',None);st.rerun()
                 except ValueError as e:st.error(str(e))
         else:
             st.caption(f'Confirmar fecha o mês INTEIRO ({money(monthly_total)}), independentemente do filtro atual.')
-            confirmed=st.checkbox('Conferi os registros do mês inteiro e aprovo o fechamento mensal.')
-            if st.button('Confirmar fechamento',type='primary',disabled=not confirmed or not monthly["active_count"] or bool(errors or conflicts)):
+            if st.button('Confirmar fechamento',type='primary',disabled=not monthly["active_count"] or bool(errors or conflicts)):
                 try:storage.close_month(month);st.session_state.pop('exports',None);st.rerun()
                 except ValueError as e:st.error(str(e))
         with st.expander('Histórico de alterações'):st.dataframe(pd.DataFrame(storage.audit(month)),hide_index=True)
@@ -342,8 +330,7 @@ def render(month,page,parsed_file,reference):
                 try:holidays.save(hdate.isoformat(),description,scope,state,town,selected['id'] if selected else None);st.session_state.pop('exports',None);st.rerun()
                 except ValueError as e:st.error(str(e))
         if selected:
-            remove=st.checkbox('Confirmo excluir este feriado do calendário')
-            if st.button('Excluir feriado',disabled=not remove):
+            if st.button('Excluir feriado',disabled=False):
                 holidays.delete(selected['id']);st.session_state.pop('exports',None);st.rerun()
         st.subheader('Identificação automática de municípios e UFs')
         st.caption('Correspondência exata por nomes/códigos IBGE, sem acentos e prefixo ATC; homônimos não recebem município/UF por suposição. Referência comunitária versionada e procedência em reference_data/PROVENANCE.md. Identificações manuais existentes têm prioridade.')
@@ -361,12 +348,9 @@ def render(month,page,parsed_file,reference):
                 source=st.selectbox('Origem cidade/ATC na planilha',sources)
                 municipality=st.text_input('Município confirmado')
                 uf=st.text_input('UF confirmada')
-                approved=st.checkbox('Confirmo que esta origem identifica exclusivamente este município e UF')
                 if st.form_submit_button('Salvar identificação municipal'):
-                    if not approved:st.error('É necessária confirmação explícita da localidade.')
-                    else:
-                        try:holidays.bind(source,municipality,uf);st.session_state.pop('exports',None);st.rerun()
-                        except ValueError as e:st.error(str(e))
+                    try:holidays.bind(source,municipality,uf);st.session_state.pop('exports',None);st.rerun()
+                    except ValueError as e:st.error(str(e))
         st.subheader('Regras confirmadas')
         st.markdown('''- R$ 1,38: impressa Sim, retida Não e causa vazia.
 - R$ 1,28: impressa Não, retida Não e causa vazia.

@@ -7,7 +7,6 @@ import openpyxl
 import inspection_billing as bill
 import validar_vistorias
 import test_modular_finance as fixtures
-
 class CatalogChanges(unittest.TestCase):
  setUp=fixtures.ModularFinanceTests.setUp
  tearDown=fixtures.ModularFinanceTests.tearDown
@@ -72,9 +71,8 @@ class CatalogChanges(unittest.TestCase):
    next(s for s in a.selectbox if s.label=='Descrição TSS para editar').set_value('VISTORIA CADASTRAL').run()
    next(s for s in a.selectbox if s.label=='Categoria para cobrança').set_value('200014106')
    next(t for t in a.text_input if t.label=='Competência inicial da classificação').set_value('2026-09')
-   next(t for t in a.text_input if t.label=='Documento/justificativa da classificação').set_value('Reclassificação confirmada')
    next(b for b in a.button if b.label=='Calcular impacto da classificação').click().run();self.assertFalse(a.exception)
    self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],3450)
-   next(c for c in a.checkbox if c.label.startswith('Conferi a vigência')).check();next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception)
+   next(b for b in a.button if b.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception)
    self.assertEqual(bill.preview(self.root,'2026-09')['inspection_cents'],4500)
 if __name__=='__main__':unittest.main()

@@ -71,7 +71,9 @@ class ImportActions(unittest.TestCase):
 
     def test_closed_month_reason_and_stale_confirmation(self):
         a=self.add(self.raw[:1]);preview=storage.import_preview('2026-10',a)
-        with self.assertRaises(ValueError):storage.set_import_deleted('2026-10',a,True,'')
+        storage.set_import_deleted('2026-10',a,True,'')
+        storage.set_import_deleted('2026-10',a,False)
+        preview=storage.import_preview('2026-10',a)
         storage.update_month_prices('2026-10',storage.month_info('2026-10')['prices'])
         storage.exclude('2026-10',storage.records('2026-10')[0]['id'],'Conferência')
         with self.assertRaisesRegex(ValueError,'mudaram'):storage.set_import_deleted('2026-10',a,True,'Excluir',preview['version'])

@@ -8,7 +8,6 @@ import inspections as op
 import inspection_billing as b
 import inspection_contract as scope
 import validar_vistorias as independent
-
 APPROVAL='VISTORIA DE NOVA LIGAÇÃO DE ÁGUA'
 class ContractRules(unittest.TestCase):
  def setUp(self):self.temp=tempfile.TemporaryDirectory();self.data=Path(self.temp.name);self.root=self.data/'vistorias';self.files=[]
@@ -94,10 +93,9 @@ class ContractRules(unittest.TestCase):
   self.load()
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
    a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();navigate(a,module='Configurações');navigate(a,'Municípios do Contrato');self.assertFalse(a.exception)
-   next(t for t in a.text_input if t.label=='Início de vigência (AAAA-MM)').set_value('2026-10');next(t for t in a.text_input if t.label=='Documento e justificativa do escopo').set_value('Documento teste')
+   next(t for t in a.text_input if t.label=='Início de vigência (AAAA-MM)').set_value('2026-10')
    next(t for t in a.button if t.label=='Calcular impacto do escopo').click().run();self.assertFalse(a.exception)
-   next(t for t in a.checkbox if t.label.startswith('Confirmo os municípios')).check();next(t for t in a.button if t.label=='Confirmar escopo').click().run();self.assertFalse(a.exception)
-
+   next(t for t in a.button if t.label=='Confirmar escopo').click().run();self.assertFalse(a.exception)
  def test_geo_scope_and_unknown_do_not_enter_contract(self):
   self.load();b.save_geo(self.root,'2026-09','Por município',2,{'BOCAINA':2,'MACATUBA':10},'Documento')
   p=self.preview();self.assertEqual(p['geo']['cents'],2400);self.assertEqual(p['geo']['out_of_scope_quantity'],10);self.assertTrue(p['geo']['ready'])
@@ -110,10 +108,9 @@ class ContractRules(unittest.TestCase):
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
    a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.date_input[0].set_value(date(2026,9,1)).run();navigate(a,module='Vistorias');navigate(a,'Regras comerciais de Vistorias')
    next(v for v in a.selectbox if v.label=='Categoria do critério').set_value('200014105').run()
-   next(v for v in a.selectbox if v.label=='Critério de cobrança').set_value('manual');next(v for v in a.text_input if v.label=='Justificativa/documento do critério').set_value('Documento confirmado')
+   next(v for v in a.selectbox if v.label=='Critério de cobrança').set_value('manual')
    next(v for v in a.button if v.label=='Calcular impacto do critério').click().run();self.assertFalse(a.exception);self.assertEqual(self.preview()['inspection_cents'],2250)
-   next(v for v in a.checkbox if v.label.startswith('Conferi a vigência')).check();next(v for v in a.button if v.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception);self.assertEqual(self.preview()['inspection_cents'],0);self.assertEqual(self.preview()['pending'],2)
-
+   next(v for v in a.button if v.label=='Confirmar alteração após impacto').click().run();self.assertFalse(a.exception);self.assertEqual(self.preview()['inspection_cents'],0);self.assertEqual(self.preview()['pending'],2)
 class MigrationTests(unittest.TestCase):
  def old_root(self,path,approved=False):
   # Dumps sintéticos reais de 568bc75: reproduzível sem Git/Python antigo no Windows.
