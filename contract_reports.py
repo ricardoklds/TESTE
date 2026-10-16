@@ -5,13 +5,13 @@ from contract_presentation import money,unit_text,simulate
 
 LABEL='PRÉVIA — NÃO APROVADA'
 
-def financial_summary(composition,enabled):
+def financial_summary(composition,enabled,percent=1):
     rows=[('Leituras',composition['subtotals']['Leituras']),('Vistorias',composition['subtotals']['Vistorias']),('Geolocalização',composition['subtotals']['Geolocalização']),('Subtotal informativo: Vistorias + Geolocalização',composition['visits_geo_cents']),('Faturamento bruto',composition['gross_cents'])]
     if enabled:
-        s=simulate(composition['gross_cents'],True);rows.extend([('Glosa simulada de 1%',s['deduction_cents']),('Líquido simulado',s['net_cents'])])
+        s=simulate(composition['gross_cents'],True,percent);label=f'Glosa simulada de {float(percent):g}%'.replace('.',',');rows.extend([(label,s['deduction_cents']),('Líquido simulado',s['net_cents'])])
     return rows
 
-def excel(composition,enabled=False):
+def excel(composition,enabled=False,percent=1):
     import openpyxl
     from openpyxl.styles import Font,PatternFill,Alignment
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
@@ -24,7 +24,7 @@ def excel(composition,enabled=False):
     def currency(cell,cents):
         if cents is not None:cell.value=cents/100;cell.number_format='"R$" #,##0.00'
     s=w.create_sheet('Resumo Geral');append(s,['Gestão de Medição Sabesp']);append(s,[LABEL]);append(s,['Competência',composition['month']]);append(s,['Componente','Valor (R$)'])
-    for label,amount in financial_summary(composition,enabled):append(s,[label,None]);currency(s.cell(s.max_row,2),amount)
+    for label,amount in financial_summary(composition,enabled,percent):append(s,[label,None]);currency(s.cell(s.max_row,2),amount)
     append(s,['Observações'])
     for note in composition['notes']:append(s,[note])
     if enabled:append(s,['Glosa e líquido são somente simulações gerenciais, sem registro financeiro.'])
@@ -48,7 +48,7 @@ def excel(composition,enabled=False):
         s.print_options.horizontalCentered=True;s.sheet_properties.pageSetUpPr.fitToPage=True;s.page_setup.orientation='landscape';s.page_setup.paperSize=s.PAPERSIZE_A4;s.page_setup.fitToWidth=1;s.page_setup.fitToHeight=0
     out=BytesIO();w.save(out);return out.getvalue()
 
-def pdf(composition,enabled=False):
+def pdf(composition,enabled=False,percent=1):
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
     from reportlab.lib.enums import TA_RIGHT
@@ -58,7 +58,7 @@ def pdf(composition,enabled=False):
     styles=getSampleStyleSheet();styles.add(ParagraphStyle('small_service',fontName='Helvetica',fontSize=8,leading=10));styles.add(ParagraphStyle('right_money',parent=styles['small_service'],alignment=TA_RIGHT))
     def p(text,style='small_service'):return Paragraph(escape(str(text)),styles[style])
     story=[p('Gestão de Medição Sabesp','Title'),p(LABEL,'Heading2'),p('Competência: '+composition['month']),Spacer(1,10)]
-    for label,amount in financial_summary(composition,enabled):story.append(p(label+': '+money(amount)))
+    for label,amount in financial_summary(composition,enabled,percent):story.append(p(label+': '+money(amount)))
     if enabled:story.append(p('Glosa e líquido são simulações gerenciais. Nenhum desconto foi registrado.'))
     story.append(Spacer(1,12))
     for component in composition['subtotals']:

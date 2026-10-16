@@ -4,8 +4,11 @@ from contextlib import closing
 from pathlib import Path
 import json,sqlite3
 
-def simulate(gross_cents,enabled):
-    deduction=int((Decimal(gross_cents)/100).quantize(Decimal('1'),rounding=ROUND_HALF_UP)) if enabled else 0
+def simulate(gross_cents,enabled,percent=1):
+    rate=Decimal(str(percent))
+    if not rate.is_finite() or not Decimal('0.1')<=rate<=5 or rate*10!=(rate*10).to_integral_value():
+        raise ValueError('Percentual deve estar entre 0,1% e 5%, em passos de 0,1%.')
+    deduction=int((Decimal(gross_cents)*rate/100).quantize(Decimal('1'),rounding=ROUND_HALF_UP)) if enabled else 0
     return {'gross_cents':gross_cents,'deduction_cents':deduction,'net_cents':gross_cents-deduction}
 
 def legacy_readings(data,p):

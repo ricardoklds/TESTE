@@ -87,5 +87,5 @@ class NoDocuments(unittest.TestCase):
      label=str(node.args[0].value).casefold();self.assertFalse(any(w in label for w in ['document','justific','responsável','evidência']),label)
   self.load()
   with self.app() as a:
-   navigate(a,module='Fechamento geral');self.assertFalse(any(b.label=='Aplicar multa' for b in a.button));self.assertTrue(any(t.label=='Aplicar multa de 1%' for t in a.toggle))
+   navigate(a,module='Fechamento geral');self.assertFalse(any(b.label=='Aplicar multa' for b in a.button));self.assertTrue(any(t.label=='Aplicar glosa simulada' for t in a.toggle))
 if __name__=='__main__':unittest.main()

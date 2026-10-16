@@ -28,8 +28,12 @@ def render(data,month,allow_close=False):
     cols=st.columns(3)
     cols[0].metric('Leituras',money(p['readings']['cents']));cols[1].metric('Vistorias',money(p['visits']['inspection_cents']));cols[2].metric('Geolocalização',money(p['visits']['geo']['cents']))
     st.caption('Leituras + Vistorias + Geolocalização = Fechamento bruto.')
-    enabled=st.toggle('Aplicar multa de 1%',value=False,key='simulate_fine:'+month) if allow_close else False
-    simulated=simulate(p['gross_cents'],enabled)
+    enabled=st.toggle('Aplicar glosa simulada',value=False,key='simulate_fine:'+month) if allow_close else False
+    percent=1.0
+    if enabled:
+        percent=st.slider('Percentual da glosa (%)',min_value=0.1,max_value=5.0,value=1.0,step=0.1,format='%.1f%%',key='simulate_percent:'+month)
+    simulated=simulate(p['gross_cents'],enabled,percent)
+    if allow_close:st.metric('Percentual selecionado',f'{percent if enabled else 0:.1f}%'.replace('.',','))
     cols=st.columns(3)
     if allow_close:
         cols[0].metric('Fechamento bruto',money(simulated['gross_cents']));cols[1].metric('Glosa simulada',money(simulated['deduction_cents']));cols[2].metric('Fechamento líquido simulado',money(simulated['net_cents']))
@@ -55,13 +59,13 @@ def render(data,month,allow_close=False):
             st.caption('Geolocalização é contabilizada uma única vez no componente separado acima.')
     if allow_close and composition:
         formats=st.selectbox('Formato da prévia',['PDF e Excel','PDF','Excel'])
-        preview_scope=(month,billing.digest(p),enabled,formats)
+        preview_scope=(month,billing.digest(p),enabled,formats,percent)
         if st.button('Gerar relatório de prévia'):
             import contract_reports
             with st.spinner('Preparando prévia gerencial dos totais existentes…'):
                 artifacts={}
-                if formats in ('PDF e Excel','PDF'):artifacts['PDF']=contract_reports.pdf(composition,enabled)
-                if formats in ('PDF e Excel','Excel'):artifacts['Excel']=contract_reports.excel(composition,enabled)
+                if formats in ('PDF e Excel','PDF'):artifacts['PDF']=contract_reports.pdf(composition,enabled,percent)
+                if formats in ('PDF e Excel','Excel'):artifacts['Excel']=contract_reports.excel(composition,enabled,percent)
                 st.session_state['managerial_contract_preview']=(preview_scope,artifacts)
         saved_preview=st.session_state.get('managerial_contract_preview')
         if saved_preview and saved_preview[0]==preview_scope:
@@ -81,7 +85,7 @@ def render(data,month,allow_close=False):
         with st.expander('Registro definitivo de glosa · fechamento oficial'):
             st.write('Glosa definitiva registrada: '+money(p['deduction']['cents'] if p['deduction'] else 0))
             st.write('Líquido oficial: '+money(p['net_cents']))
-            st.caption('Histórico somente para consulta. O controle de 1% acima é apenas uma simulação gerencial.')
+            st.caption('Histórico somente para consulta. O controle de glosa acima é apenas uma simulação gerencial.')
     st.caption('O relatório do contrato preserva os valores oficiais; não incorpora a glosa simulada.')
     if st.button('Preparar relatório do contrato'):
         from io import BytesIO
