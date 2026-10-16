@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 import openpyxl
+import inspection_contract as contract_policy
 from io import BytesIO
 
 class ClosingConnection(sqlite3.Connection):
@@ -29,6 +30,7 @@ def connect(root):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     c=sqlite3.connect(root/'vistorias.sqlite3',factory=ClosingConnection);c.row_factory=sqlite3.Row
     c.execute('PRAGMA busy_timeout=30000')
+    c.create_function('contract_city',1,contract_policy.norm,deterministic=True)
     # A primeira versão cria somente banco novo. Bancos com versão desconhecida não são migrados.
     version=c.execute('PRAGMA user_version').fetchone()[0]
     exists=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='visits'").fetchone()
@@ -86,19 +88,44 @@ def import_file(root,content,name,sheet,progress=None):
     except Exception:c.rollback();raise
     finally:c.close();w.close()
 
-def summary(root,start,end):
+def summary(root,start,end,policy=None):
+    if start[:7]!=end[:7]:raise ValueError('Selecione um período dentro da mesma competência.')
+    month=start[:7];policy=policy or contract_policy.from_root(root,month)
+    # Fotografia operacional de uma competência já aprovada não é recalculada.
+    financial=Path(root).resolve()/'financeiro.sqlite3'
+    if financial.exists():
+        from contextlib import closing
+        with closing(sqlite3.connect(financial.as_uri()+'?mode=ro',uri=True)) as f:
+            old=f.execute('SELECT payload FROM approvals WHERE month=?',(month,)).fetchone()
+            if old:
+                import calendar
+                first=month+'-01';last=month+'-'+str(calendar.monthrange(int(month[:4]),int(month[5:]))[1])
+                frozen=json.loads(old[0]).get('deadline_snapshot')
+                if frozen and start==first and end==last:return frozen['total'],frozen['municipalities'],frozen['pending']
+    # Agrupar antes de normalizar: dezenas de municípios, sem UDF por ocorrência.
+    grouped={};pending=unknown=outside=0
     with connect(root) as c:
-        rows=[dict(r) for r in c.execute('''SELECT city,COUNT(*) total,
-        SUM(status='Dentro do prazo') inside,SUM(status='Fora do prazo') outside
-        FROM visits WHERE day BETWEEN ? AND ? AND status IN ('Dentro do prazo','Fora do prazo') GROUP BY city ORDER BY city''',(start,end))]
-        pending=c.execute("SELECT COUNT(*) FROM visits WHERE status='Pendente de data' AND (day BETWEEN ? AND ? OR day IS NULL)",(start,end)).fetchone()[0]
+        for city,status,n in c.execute('SELECT city,status,COUNT(*) FROM visits WHERE day BETWEEN ? AND ? OR day IS NULL GROUP BY city,status',(start,end)):
+            scope=contract_policy.classify(city,policy)
+            if scope=='Fora do escopo do contrato':outside+=n;continue
+            if scope!='Dentro do escopo':
+                if status!='Não concluída':unknown+=n
+                continue
+            if status=='Pendente de data':pending+=n;continue
+            if status not in ('Dentro do prazo','Fora do prazo'):continue
+            city=contract_policy.norm(city)
+            r=grouped.setdefault(city,{'city':city,'total':0,'inside':0,'outside':0})
+            r['total']+=n;r['inside' if status=='Dentro do prazo' else 'outside']+=n
+    rows=[grouped[k] for k in sorted(grouped)];pending+=unknown
     total={k:sum(r[k] for r in rows) for k in ('total','inside','outside')}
     def decorate(r):
         r['percent']=100*r['inside']/r['total'] if r['total'] else None
         r['outside_percent']=100*r['outside']/r['total'] if r['total'] else None
         r['met']=r['inside']*100>=r['total']*99 if r['total'] else None
         return r
+    total.update(out_of_scope=outside,municipality_pending=unknown)
     return decorate(total),[decorate(r) for r in rows],pending
+
 
 def fine(root,start,end,base_cents,evidence,confirmed=False,expected_version=None):
     if not confirmed or not evidence.strip() or type(base_cents)!=int or base_cents<=0:raise ValueError('Confirmação, base positiva e documento do fechamento são obrigatórios.')
@@ -108,8 +135,8 @@ def fine(root,start,end,base_cents,evidence,confirmed=False,expected_version=Non
         c.execute('BEGIN IMMEDIATE')
         version=tuple(c.execute('SELECT COUNT(*),COALESCE(MAX(id),0) FROM imports').fetchone())
         if expected_version is not None and tuple(expected_version)!=version:raise ValueError('Importações mudaram; atualize e confirme novamente.')
-        counts=c.execute("SELECT COUNT(*),SUM(status='Dentro do prazo') FROM visits WHERE day BETWEEN ? AND ? AND status IN ('Dentro do prazo','Fora do prazo')",(start,end)).fetchone()
-        pending=c.execute("SELECT COUNT(*) FROM visits WHERE status='Pendente de data' AND (day BETWEEN ? AND ? OR day IS NULL)",(start,end)).fetchone()[0]
+        total,_,pending=summary(root,start,end)
+        counts=(total['total'],total['inside'])
         if pending or not counts[0] or counts[1]*100>=counts[0]*99:raise ValueError('Cálculo indisponível: meta atingida, período sem dados ou datas pendentes.')
         from decimal import Decimal,ROUND_HALF_UP
         penalty=int((Decimal(base_cents)/100).quantize(Decimal('1'),rounding=ROUND_HALF_UP))
@@ -127,7 +154,9 @@ def export(root,start,end,detail=False):
         c=connect(root)
         try:
             n=0;page=0
-            for r in c.execute("SELECT v.*,i.name,i.sheet FROM visits v JOIN imports i ON i.id=v.import_id WHERE day BETWEEN ? AND ? AND status='Fora do prazo' ORDER BY day,v.id",(start,end)):
+            policy=contract_policy.from_root(root,start[:7]);allowed='1' if policy.get('legacy') else 'contract_city(v.city) IN (SELECT value FROM json_each(?))'
+            args=[] if policy.get('legacy') else [json.dumps(policy['allowed'])]
+            for r in c.execute("SELECT v.*,i.name,i.sheet FROM visits v JOIN imports i ON i.id=v.import_id WHERE day BETWEEN ? AND ? AND status='Fora do prazo' AND "+allowed+" ORDER BY day,v.id",[start,end,*args]):
                 if n%1048575==0:
                     page+=1;s=w.create_sheet('Fora do prazo '+str(page));s.append(['Arquivo','Aba','Linha','OS','Município','TSS','Prazo início','Prazo fim','Tempo residual original','Execução','Situação'])
                 raw=json.loads(r['raw']);s.append([r['name'],r['sheet'],r['line'],r['os'],r['city']]+[str(raw.get(k) or '') for k in ('TSS','Prazo de Execução - Início','Prazo de Execução - Fim','Tempo Residual','Data Fim Execução')]+[r['status']]);n+=1

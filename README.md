@@ -1,3 +1,5 @@
+Atualização consolidada de Vistorias: [escopo permanente, cobrança por OS, conciliação e Windows](ESCOPO_CONTRATUAL_VISTORIAS.md).
+
 # Gestão de medição e fechamento mensal
 
 Ajuste pontual e exportação sob demanda no card de feriados: [CARD_FERIADOS.md](CARD_FERIADOS.md).

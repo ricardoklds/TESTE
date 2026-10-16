@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 import calendar, hashlib, json, sqlite3, unicodedata, uuid
 import inspections
+import inspection_contract as contract_policy
 
 SERVICES=(('200014105','Vistoria para aprovação de ligação',2250),('200014106','Vistoria predial',2250),('200014104','Vistoria de atualização cadastral',1200),('geo','Geolocalização',1200))
 
@@ -25,10 +26,14 @@ def backup(path):
 
 def connect(root):
     root=Path(root).resolve();root.mkdir(parents=True,exist_ok=True);p=root/'financeiro.sqlite3'
-    c=sqlite3.connect(p,factory=inspections.ClosingConnection);c.row_factory=sqlite3.Row;c.execute('PRAGMA busy_timeout=30000')
+    c=sqlite3.connect(p.as_uri(),uri=True,factory=inspections.ClosingConnection);c.row_factory=sqlite3.Row;c.execute('PRAGMA busy_timeout=30000')
     version=c.execute('PRAGMA user_version').fetchone()[0]
-    if version not in (0,1):c.close();raise ValueError('Banco financeiro desconhecido; migração não autorizada.')
-    if version==1 and c.execute("SELECT 1 FROM metadata WHERE key='catalog_initial'").fetchone():return c
+    if version not in (0,1,2):c.close();raise ValueError('Banco financeiro desconhecido; migração não autorizada.')
+    if version in (1,2) and c.execute("SELECT 1 FROM metadata WHERE key='catalog_initial'").fetchone():
+        if version==1:
+            try:_migrate_contract(c,root)
+            except Exception:c.close();raise
+        return c
     c.executescript('''CREATE TABLE IF NOT EXISTS revision(id INTEGER PRIMARY KEY CHECK(id=1),value INTEGER NOT NULL); INSERT OR IGNORE INTO revision VALUES(1,0);
     CREATE TABLE IF NOT EXISTS services(code TEXT PRIMARY KEY,name TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS prices(code TEXT NOT NULL,effective TEXT NOT NULL,cents INTEGER NOT NULL CHECK(cents>=0),active INTEGER NOT NULL,PRIMARY KEY(code,effective));
@@ -52,7 +57,7 @@ def connect(root):
         for description in EXCLUDED:c.execute('INSERT OR IGNORE INTO rules(tss,effective,decision,evidence) VALUES(?,?,?,?)',(norm(description),'2026-09','Excluir',evidence))
         c.execute("INSERT INTO metadata VALUES('catalog_initial','1')")
         audit(c,'Catálogo inicial confirmado',{'evidence':evidence})
-    c.commit();return c
+    c.commit();_migrate_contract(c,root);return c
 
 def revision(root):
     with connect(root) as c:return c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]
@@ -80,8 +85,8 @@ def sync(root,progress=None):
             values=[]
             for id,day,city,os,rawtext in batch:
                 r=json.loads(rawtext);closed=all(norm(r.get(k))=='FECHADA' for k in ('Status da OS','Status da Operação'))
-                values.append((id,day,city,os,norm(r.get('Contrato')),norm(r.get('TSS')),norm(r.get('Causa Resultado')),norm(r.get('Formulário de Baixa')),norm(r.get('Família')),int(closed),int(norm(r.get('TSS'))=='VISTORIA LIGACAO INATIVA SEM DEBITO'),hashlib.sha256(rawtext.encode()).hexdigest()))
-            c.executemany('INSERT INTO commercial VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',values);n+=len(values)
+                values.append((id,day,city,os,norm(r.get('Contrato')),norm(r.get('TSS')),norm(r.get('Causa Resultado')),norm(r.get('Formulário de Baixa')),norm(r.get('Família')),int(closed),int(norm(r.get('TSS'))=='VISTORIA LIGACAO INATIVA SEM DEBITO'),hashlib.sha256(rawtext.encode()).hexdigest(),norm(city),execution_stamp(r.get('Data Fim Execução'),day),day[:7] if day else None))
+            c.executemany('INSERT INTO commercial VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',values);n+=len(values)
             if progress:progress(n)
         c.execute("INSERT OR REPLACE INTO metadata VALUES('prepared','1')")
         if n:audit(c,'Atualizar projeção comercial',{'rows':n,'last_id':last})
@@ -140,48 +145,91 @@ def save_geo(root,month,mode,total,cities,evidence):
 def geo_summary(c,month,prices):
     r=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
     if not r:return {'quantity':0,'cents':0,'ready':False,'reason':'Geolocalização não confirmada (zero deve ser informado explicitamente).'}
-    cities=json.loads(r['cities']);quantity=r['total'] if r['mode']=='Total mensal' else sum(cities.values())
-    matches=r['total'] is None or not cities or r['total']==sum(cities.values())
-    price=prices.get('geo');ready=matches and price is not None and bool(price['active'])
-    return {'quantity':quantity,'unit_cents':price['cents'] if price else None,'cents':quantity*price['cents'] if price else 0,'ready':ready,'mode':r['mode'],'cities_total':sum(cities.values()) if cities else None,'reference_total':r['total'],'reason':'' if ready else 'Total e municípios divergem ou preço inativo/ausente.'}
+    cities=json.loads(r['cities']);policy=contract_policy.policy(c,month)
+    inside={k:v for k,v in cities.items() if contract_policy.classify(k,policy)=='Dentro do escopo'}
+    unknown={k:v for k,v in cities.items() if contract_policy.classify(k,policy).startswith('Pendente') and v}
+    outside=sum(v for k,v in cities.items() if contract_policy.classify(k,policy)=='Fora do escopo do contrato')
+    quantity=r['total'] if r['mode']=='Total mensal' else sum(inside.values())
+    matches=r['total'] is None or not cities or r['total']==sum(inside.values())
+    price=prices.get('geo');ready=matches and not unknown and price is not None and bool(price['active'])
+    return {'quantity':quantity,'unit_cents':price['cents'] if price else None,'cents':quantity*price['cents'] if price else 0,'ready':ready,'mode':r['mode'],'cities_total':sum(inside.values()) if cities else None,'reference_total':r['total'],'out_of_scope_quantity':outside,'unknown_municipalities':unknown,'reason':'' if ready else 'Total e municípios contratuais divergem, município pendente ou preço inativo/ausente.'}
 
 # Todas as classificações em SQL; registros brutos são lidos só na projeção/importação e exportação solicitada.
-def classified_sql(month):
-    first,last=month_bounds(month)
-    sql='''WITH applicable AS (SELECT * FROM rules r WHERE effective<=:month AND effective=(SELECT MAX(effective) FROM rules x WHERE x.tss=r.tss AND x.cause=r.cause AND x.form=r.form AND x.effective<=:month)),
+def classified_sql(month,connection=None):
+    month_bounds(month)
+    periods={month}
+    if connection is not None:periods.update(r[0] for r in connection.execute('SELECT DISTINCT month FROM commercial WHERE month IS NOT NULL'))
+    contexts=[{'month':m,**contract_policy.policy(connection,m)} for m in sorted(periods)]
+    sql='''WITH policies AS (SELECT json_extract(value,'$.month') month,json_extract(value,'$.allowed') allowed,json_extract(value,'$.excluded') excluded,json_extract(value,'$.modes') modes,json_extract(value,'$.legacy') legacy FROM json_each(:contexts)),
+    period_keys AS MATERIALIZED (SELECT DISTINCT contract,os FROM commercial WHERE month=:month),
+    source AS MATERIALIZED (SELECT * FROM commercial WHERE month=:month UNION ALL SELECT v.* FROM period_keys k JOIN commercial v ON v.contract=k.contract AND v.os=k.os WHERE v.month<>:month),
+    allowed AS MATERIALIZED (SELECT p.month,j.value city FROM policies p,json_each(p.allowed) j),
+    excluded AS MATERIALIZED (SELECT p.month,j.value city FROM policies p,json_each(p.excluded) j),
+    effective_rules AS MATERIALIZED (SELECT pol.month,r.* FROM policies pol JOIN rules r ON r.effective=(SELECT MAX(effective) FROM rules x WHERE x.tss=r.tss AND x.cause=r.cause AND x.form=r.form AND x.effective<=pol.month)),
+    effective_prices AS MATERIALIZED (SELECT pol.month,p.* FROM policies pol JOIN prices p ON p.effective=(SELECT MAX(effective) FROM prices x WHERE x.code=p.code AND x.effective<=pol.month)),
     matches AS (SELECT v.id,r.code,r.decision,ROW_NUMBER() OVER(PARTITION BY v.id ORDER BY (r.cause<>'')+(r.form<>'') DESC,r.id DESC) priority,
-      COUNT(*) OVER(PARTITION BY v.id,(r.cause<>'')+(r.form<>'')) ambiguity FROM commercial v JOIN applicable r ON r.tss=v.tss AND (r.cause='' OR r.cause=v.cause) AND (r.form='' OR r.form=v.form) WHERE v.day BETWEEN :first AND :last),
-    repeated AS (SELECT contract,os FROM commercial WHERE day BETWEEN :first AND :last AND os<>'' GROUP BY contract,os HAVING COUNT(*)>1),
+      COUNT(*) OVER(PARTITION BY v.id,(r.cause<>'')+(r.form<>'')) ambiguity FROM source v JOIN effective_rules r ON r.month=v.month AND r.tss=v.tss AND (r.cause='' OR r.cause=v.cause) AND (r.form='' OR r.form=v.form)),
     override_values AS (SELECT json_extract(value,'$.tss') tss,json_extract(value,'$.effective') effective,json_extract(value,'$.cents') cents FROM metadata WHERE key LIKE 'tss_price:%'),
-    overrides AS (SELECT tss,cents FROM (SELECT tss,cents,ROW_NUMBER() OVER(PARTITION BY tss ORDER BY effective DESC) precedence FROM override_values WHERE effective<=:month) WHERE precedence=1),
-    priced AS (SELECT p.* FROM prices p WHERE effective=(SELECT MAX(effective) FROM prices x WHERE x.code=p.code AND x.effective<=:month)),
-    chosen AS (SELECT v.*,COALESCE(rv.decision,m.decision) decision,COALESCE(rv.code,m.code) code,rv.visit_id reviewed,COALESCE(m.ambiguity,0) ambiguity,
-      EXISTS(SELECT 1 FROM repeated d WHERE d.contract=v.contract AND d.os=v.os) duplicate
-      FROM commercial v LEFT JOIN matches m ON m.id=v.id AND m.priority=1 LEFT JOIN reviews rv ON rv.visit_id=v.id AND rv.month=:month WHERE v.day BETWEEN :first AND :last),
-    resolved AS (SELECT v.*,CASE WHEN o.cents IS NOT NULL THEN o.cents ELSE p.cents END cents,p.active,CASE WHEN closed=0 THEN 'Não concluída'
+    overrides AS (SELECT id,cents FROM (SELECT v.id,o.cents,ROW_NUMBER() OVER(PARTITION BY v.id ORDER BY o.effective DESC) precedence FROM source v JOIN override_values o ON o.tss=v.tss AND o.effective<=v.month) WHERE precedence=1),
+    chosen AS MATERIALIZED (SELECT v.*,COALESCE(rv.decision,m.decision) decision,COALESCE(rv.code,m.code) code,rv.visit_id reviewed,COALESCE(m.ambiguity,0) ambiguity,
+      CASE WHEN pol.legacy THEN 'Dentro do escopo' WHEN a.city IS NOT NULL THEN 'Dentro do escopo' WHEN e.city IS NOT NULL THEN 'Fora do escopo do contrato' ELSE 'Pendente: município não autorizado' END scope,
+      pol.legacy,COALESCE(json_extract(pol.modes,'$.'||'"'||COALESCE(rv.code,m.code)||'"'),'manual') mode
+      FROM source v JOIN policies pol ON pol.month=v.month LEFT JOIN allowed a ON a.month=v.month AND a.city=v.city_key LEFT JOIN excluded e ON e.month=v.month AND e.city=v.city_key LEFT JOIN matches m ON m.id=v.id AND m.priority=1 LEFT JOIN reviews rv ON rv.visit_id=v.id AND rv.month=v.month),
+    manual_counts AS MATERIALIZED (SELECT month,contract,code,os,SUM(scope='Dentro do escopo' AND closed=1) n FROM chosen WHERE mode='manual' GROUP BY month,contract,code,os),
+    legacy_counts AS MATERIALIZED (SELECT month,contract,os,COUNT(*) n FROM chosen WHERE legacy=1 GROUP BY month,contract,os),
+    execution_counts AS MATERIALIZED (SELECT contract,code,os,executed_at,city_key,COUNT(*) n FROM chosen WHERE mode='execution' AND scope='Dentro do escopo' AND closed=1 AND decision='Cobrar' GROUP BY contract,code,os,executed_at,city_key),
+    base AS MATERIALIZED (SELECT v.*,COALESCE(o.cents,p.cents) cents,p.active,COALESCE(mc.n,0) repeated,COALESCE(lc.n,0) legacy_repeated,COALESCE(ec.n,0) execution_repeated,
+      CASE WHEN scope='Fora do escopo do contrato' THEN scope WHEN closed=0 THEN 'Não concluída' WHEN scope<>'Dentro do escopo' THEN scope
       WHEN decision='Excluir' AND (reviewed IS NOT NULL OR ambiguity<=1) THEN 'Excluído por classificação confirmada'
-      WHEN reviewed IS NULL AND duplicate THEN 'Pendente: OS repetida'
       WHEN reviewed IS NULL AND inactive THEN 'Pendente: ligação inativa'
       WHEN reviewed IS NULL AND ambiguity>1 THEN 'Pendente: regras ambíguas'
       WHEN decision='Pendente' THEN 'Pendente: classificação definida pelo usuário'
-      WHEN os='' THEN 'Pendente: OS ausente'
-      WHEN decision IS NULL THEN 'Pendente: serviço não mapeado'
-      WHEN p.cents IS NULL OR active<>1 THEN 'Pendente: preço ausente ou serviço inativo'
-      ELSE 'Faturável' END reason FROM chosen v LEFT JOIN priced p ON p.code=v.code LEFT JOIN overrides o ON o.tss=v.tss)
-    SELECT * FROM resolved'''
-    return sql,{'month':month,'first':first,'last':last}
+      WHEN v.executed_at IS NULL THEN 'Pendente: data de execução sem horário válido' WHEN v.os='' THEN 'Pendente: OS ausente' WHEN decision IS NULL THEN 'Pendente: serviço não mapeado'
+      WHEN p.cents IS NULL OR p.active<>1 THEN 'Pendente: preço ausente ou serviço inativo' WHEN mode='once' AND EXISTS(SELECT 1 FROM frozen_charges f WHERE f.contract=v.contract AND f.code=v.code AND f.os=v.os AND f.month<>v.month) THEN 'Pendente: OS já faturada em competência aprovada' ELSE 'Elegível' END base_reason
+      FROM chosen v LEFT JOIN effective_prices p ON p.month=v.month AND p.code=v.code LEFT JOIN overrides o ON o.id=v.id
+      LEFT JOIN manual_counts mc ON mc.month=v.month AND mc.contract=v.contract AND mc.code=v.code AND mc.os=v.os
+      LEFT JOIN legacy_counts lc ON lc.month=v.month AND lc.contract=v.contract AND lc.os=v.os
+      LEFT JOIN execution_counts ec ON ec.contract=v.contract AND ec.code=v.code AND ec.os=v.os AND ec.executed_at=v.executed_at AND ec.city_key=v.city_key),
+    ranked AS (SELECT id,contract,code,os,executed_at,city,month,ROW_NUMBER() OVER(PARTITION BY contract,code,os ORDER BY executed_at DESC,id ASC) winner_rank,
+      COUNT(*) OVER(PARTITION BY contract,code,os) os_candidates,
+      MIN(city_key) OVER(PARTITION BY contract,code,os) city_min,MAX(city_key) OVER(PARTITION BY contract,code,os) city_max,
+      FIRST_VALUE(id) OVER(PARTITION BY contract,code,os ORDER BY executed_at DESC,id ASC) winner_id
+      FROM base WHERE base_reason='Elegível' AND mode='once'),
+    final AS (SELECT v.*,r.winner_id,r.os_candidates,r.executed_at winner_executed_at,r.city winner_city,r.month winner_month,CASE WHEN v.base_reason<>'Elegível' THEN v.base_reason
+      WHEN v.mode='once' AND EXISTS(SELECT 1 FROM frozen_charges f WHERE f.contract=v.contract AND f.code=v.code AND f.os=v.os AND f.month<>v.month) THEN 'Pendente: OS já faturada em competência aprovada'
+      WHEN v.mode='once' AND r.city_min<>r.city_max THEN 'Pendente: OS com municípios divergentes'
+      WHEN v.mode='once' AND r.winner_rank>1 THEN 'Sem cobrança adicional — OS já representada'
+      WHEN v.mode='execution' AND v.execution_repeated>1 AND v.reviewed IS NULL THEN 'Pendente: execução sem identidade unívoca'
+      WHEN v.mode='manual' AND (CASE WHEN v.legacy THEN v.legacy_repeated ELSE v.repeated END)>1 AND v.reviewed IS NULL THEN 'Pendente: OS repetida'
+      ELSE 'Faturável' END reason FROM base v LEFT JOIN ranked r ON r.id=v.id)
+    SELECT * FROM final WHERE month=:month'''
+    if len(periods)==1:
+        start=sql.index('    period_keys AS');end=sql.index('    allowed AS',start)
+        sql=sql[:start]+'    source AS MATERIALIZED (SELECT * FROM commercial WHERE month=:month),\n'+sql[end:]
+    return sql,{'month':month,'contexts':json.dumps(contexts,ensure_ascii=False)}
+
 
 def preview(root,month,connection=None):
     if connection is None:
         with connect(root) as c:return preview(root,month,c)
-    c=connection;sql,args=classified_sql(month)
-    unit_groups=[dict(r) for r in c.execute("SELECT reason,code,cents unit_cents,COUNT(*) quantity,COALESCE(SUM(CASE WHEN reason='Faturável' THEN cents ELSE 0 END),0) cents FROM ("+sql+") GROUP BY reason,code,cents",args)]
+    c=connection;sql,args=classified_sql(month,c)
+    municipal_groups=[dict(r) for r in c.execute("SELECT reason,code,cents unit_cents,city_key,scope,COUNT(*) quantity,SUM(closed=1) closed_quantity,COALESCE(SUM(CASE WHEN reason='Faturável' THEN cents ELSE 0 END),0) cents FROM ("+sql+") GROUP BY reason,code,cents,city_key,scope",args)]
+    units={};municipalities={}
+    for r in municipal_groups:
+        key=(r['reason'],r['code'],r['unit_cents']);u=units.setdefault(key,{'reason':r['reason'],'code':r['code'],'unit_cents':r['unit_cents'],'quantity':0,'cents':0});u['quantity']+=r['quantity'];u['cents']+=r['cents']
+        if r['scope']=='Fora do escopo do contrato':continue
+        m=municipalities.setdefault(r['city_key'],{'municipality':r['city_key'],'operational_count':0,'billed_count':0,'cents':0,'pending':0})
+        if r['scope']=='Dentro do escopo':m['operational_count']+=r['closed_quantity']
+        if r['reason']=='Faturável':m['billed_count']+=r['quantity'];m['cents']+=r['cents']
+        if r['reason'].startswith('Pendente:'):m['pending']+=r['quantity']
+    unit_groups=list(units.values())
     combined={}
     for r in unit_groups:
         key=(r['reason'],r['code']);g=combined.setdefault(key,{'reason':r['reason'],'code':r['code'],'quantity':0,'cents':0});g['quantity']+=r['quantity'];g['cents']+=r['cents']
     groups=list(combined.values())
     # Todas as linhas sem data ficam pendentes globais: não atribuir mês por suposição.
-    undated=c.execute('SELECT COUNT(*) FROM commercial WHERE day IS NULL AND closed=1').fetchone()[0]
+    pol=contract_policy.policy(c,month)
+    undated=sum(r[1] for r in c.execute('SELECT city_key,COUNT(*) FROM commercial WHERE day IS NULL AND closed=1 GROUP BY city_key') if contract_policy.classify(r[0],pol)!='Fora do escopo do contrato')
     pending=sum(r['quantity'] for r in groups if r['reason'].startswith('Pendente:'))+undated
     services=service_list_connection(c,month);geo=geo_summary(c,month,services)
     projection_last=c.execute('SELECT COALESCE(MAX(id),0) FROM commercial').fetchone()[0]
@@ -191,7 +239,7 @@ def preview(root,month,connection=None):
     ready=projection_last==actual_last and pending==0
     rates=[{k:r[k] for k in ('code','unit_cents','quantity')} for r in unit_groups if r['reason']=='Faturável']
     byservice=[{'code':code,'name':p['name'],'quantity':sum(r['quantity'] for r in groups if r['reason']=='Faturável' and r['code']==code),'cents':sum(r['cents'] for r in groups if r['reason']=='Faturável' and r['code']==code),'unit_cents':next((r['unit_cents'] for r in rates if r['code']==code),p['cents']) if len([r for r in rates if r['code']==code])<=1 else None} for code,p in services.items() if code!='geo']
-    result={'month':month,'groups':groups,'services':byservice,'rates':rates,'pending':pending,'undated':undated,'ready':ready,'sync_pending':actual_last-projection_last,'geo':geo,'inspection_cents':sum(r['cents'] for r in groups),'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]}
+    result={'month':month,'groups':groups,'municipalities':[municipalities[k] for k in sorted(municipalities)],'policy':pol,'services':byservice,'rates':rates,'pending':pending,'undated':undated,'ready':ready,'sync_pending':actual_last-projection_last,'geo':geo,'inspection_cents':sum(r['cents'] for r in groups),'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]}
     result['fingerprint']=digest(result);return result
 
 def service_list_connection(c,month):
@@ -203,6 +251,11 @@ def approve(root,month,expected,evidence,confirmed=False):
         c.execute('BEGIN IMMEDIATE');editable(c,month);p=preview(root,month,c)
         if p['fingerprint']!=expected:raise ValueError('Dados alterados; gere novamente a conciliação.')
         if not p['ready'] or not p['geo']['ready']:raise ValueError('Há pendências de classificação, sincronização ou geolocalização.')
+        first,last=month_bounds(month)
+        total,municipal,pending=inspections.summary(root,first,last)
+        p['deadline_snapshot']={'total':total,'municipalities':municipal,'pending':pending}
+        sql,args=classified_sql(month,c)
+        c.execute("INSERT INTO frozen_charges(month,visit_id,contract,code,os,cents) SELECT month,id,contract,code,os,cents FROM ("+sql+") WHERE reason='Faturável'",args)
         c.execute('INSERT INTO approvals VALUES(?,?,?,?)',(month,json.dumps(p,ensure_ascii=False),now(),evidence));audit(c,'Aprovar faturamento de vistorias',{'month':month,'snapshot':p,'evidence':evidence})
     return p
 
@@ -212,10 +265,19 @@ def financial(root,month):
         if r:return {**json.loads(r[0]),'approved':True}
     return {**preview(root,month),'approved':False}
 
+def traced_sql(c,root,sql):
+    """Acrescenta proveniência sem copiar registros brutos para a memória."""
+    source=Path(root).resolve()/'vistorias.sqlite3'
+    if not source.exists():return 'SELECT v.*,NULL original_file,NULL original_sheet,NULL original_line,NULL original_import,NULL representative_file,NULL representative_sheet,NULL representative_line FROM ('+sql+') v'
+    c.execute('ATTACH DATABASE ? AS original',(source.as_uri()+'?mode=ro',))
+    return 'SELECT v.*,i.name original_file,i.sheet original_sheet,o.line original_line,o.import_id original_import,wi.name representative_file,wi.sheet representative_sheet,w.line representative_line FROM ('+sql+') v LEFT JOIN original.visits o ON o.id=v.id LEFT JOIN original.imports i ON i.id=o.import_id LEFT JOIN original.visits w ON w.id=v.winner_id LEFT JOIN original.imports wi ON wi.id=w.import_id'
+
 def detail_page(root,month,offset=0,limit=50):
     if not 1<=limit<=100 or offset<0:raise ValueError('Paginação inválida.')
-    sql,args=classified_sql(month);args.update(limit=limit,offset=offset)
-    with connect(root) as c:return [dict(r) for r in c.execute('SELECT * FROM ('+sql+') ORDER BY id LIMIT :limit OFFSET :offset',args)]
+    with connect(root) as c:
+        sql,args=classified_sql(month,c);args.update(limit=limit,offset=offset)
+        sql='SELECT * FROM ('+sql+') ORDER BY id LIMIT :limit OFFSET :offset'
+        return [dict(r) for r in c.execute(traced_sql(c,root,sql),args)]
 
 def reconciliation(root,month,references=None,detail=False):
     """Referências são somente comparação, nunca participam da classificação."""
@@ -229,21 +291,21 @@ def reconciliation(root,month,references=None,detail=False):
     for r in p['groups']:text_row(s,[r['reason'],r['code'],r['quantity'],r['cents']])
     text_row(s,['Sem data de execução (globais)',None,p['undated'],0])
     s=w.create_sheet('Metadados');text_row(s,['Competência',month]);text_row(s,['Impressão digital da prévia',p['fingerprint']]);text_row(s,['Situação','Prévia; depende de aprovação explícita']);text_row(s,['Regra','OS e operação Fechada; competência por execução; sem dependência da tabela dinâmica. Referências não afetam cálculos.'])
-    sql,args=classified_sql(month)
+    with connect(root) as ctx:sql,args=classified_sql(month,ctx)
     s=w.create_sheet('Apuração por TSS');text_row(s,['TSS','Código','Motivo','Quantidade','Valor em centavos'])
     with connect(root) as c:
         for r in c.execute("SELECT tss,code,reason,COUNT(*),SUM(CASE WHEN reason='Faturável' THEN cents ELSE 0 END) FROM ("+sql+") GROUP BY tss,code,reason ORDER BY code,tss",args):text_row(s,list(r))
     if detail:
-        sql,args=classified_sql(month)
+        with connect(root) as ctx:sql,args=classified_sql(month,ctx)
         with connect(root) as c:
             n=0
-            for r in c.execute(sql+' ORDER BY id',args):
+            for r in c.execute(traced_sql(c,root,sql)+' ORDER BY v.id',args):
                 if n%1048575==0:
-                    s=w.create_sheet('Registros '+str(1+n//1048575));text_row(s,['ID','OS','Data','Município','TSS','Causa','Formulário','Código','Motivo','Valor em centavos'])
-                text_row(s,[r['id'],r['os'],r['day'],r['city'],r['tss'],r['cause'],r['form'],r['code'],r['reason'],r['cents'] if r['reason']=='Faturável' else 0]);n+=1
+                    s=w.create_sheet('Registros '+str(1+n//1048575));text_row(s,['ID','OS','Data','Município','TSS','Causa','Formulário','Código','Motivo','Valor em centavos','Arquivo','Aba','Linha','Importação','ID representante','Arquivo representante','Aba representante','Linha representante','Execução representante','Município representante','Competência representante'])
+                text_row(s,[r['id'],r['os'],r['day'],r['city'],r['tss'],r['cause'],r['form'],r['code'],r['reason'],r['cents'] if r['reason']=='Faturável' else 0,r['original_file'],r['original_sheet'],r['original_line'],r['original_import'],r['winner_id'],r['representative_file'],r['representative_sheet'],r['representative_line'],r['winner_executed_at'],r['winner_city'],r['winner_month']]);n+=1
     b=BytesIO();w.save(b);return b.getvalue()
 
-def export_catalog(root,month):
+def export_catalog(root,month,include_frozen=True):
     """Configuração vigente para o recálculo independente, sem acessar Excel."""
     with connect(root) as c:
         rules=[dict(r) for r in c.execute('SELECT * FROM rules r WHERE effective=(SELECT MAX(effective) FROM rules x WHERE x.tss=r.tss AND x.cause=r.cause AND x.form=r.form AND effective<=?) AND r.effective<=?',(month,month))]
@@ -252,7 +314,7 @@ def export_catalog(root,month):
         for r in c.execute("SELECT value FROM metadata WHERE key LIKE 'tss_price:%'"):
             o=json.loads(r[0])
             if o['effective']<=month and (o['tss'] not in overrides or o['effective']>overrides[o['tss']]['effective']):overrides[o['tss']]=o
-        return {'month':month,'prices':service_list_connection(c,month),'rules':rules,'reviews':reviews,'tss_prices':overrides,'scope':'Catálogo e decisões exportados para '+month}
+        return {'month':month,'policy':contract_policy.policy(c,month),'contexts':{r[0]:contract_policy.policy(c,r[0]) for r in c.execute('SELECT DISTINCT month FROM commercial WHERE month IS NOT NULL')},'frozen_charges':([dict(r) for r in c.execute('SELECT DISTINCT f.month,f.contract,f.code,f.os FROM (SELECT DISTINCT contract,os FROM commercial WHERE month=?) k JOIN frozen_charges f ON f.contract=k.contract AND f.os=k.os',(month,))] if include_frozen else []),'prices':service_list_connection(c,month),'rules':rules,'reviews':reviews,'tss_prices':overrides,'scope':'Catálogo e decisões exportados para '+month}
 
 
 def catalog_state(root):
@@ -277,6 +339,19 @@ def _write_change(c,change):
         c.execute('INSERT OR IGNORE INTO services VALUES(?,?)',(code,name))
         c.execute('INSERT OR REPLACE INTO prices VALUES(?,?,?,?)',(code,effective,cents,int(change.get('active',True))))
         return {'price':dict(before) if before else None}
+    if kind in ('scope','billing_mode'):
+        if kind=='scope':
+            allowed=sorted({norm(v) for v in change.get('allowed',[]) if norm(v)})
+            excluded=sorted({norm(v) for v in change.get('excluded',[]) if norm(v)})
+            if not allowed or set(allowed)&set(excluded):raise ValueError('Informe municípios autorizados, sem sobreposição com os excluídos.')
+            key='contract_scope:'+effective;value={'effective':effective,'allowed':allowed,'excluded':excluded}
+        else:
+            code=change.get('code');mode=change.get('mode')
+            if mode not in contract_policy.LABELS or code=='geo' or not c.execute('SELECT 1 FROM services WHERE code=?',(code,)).fetchone():raise ValueError('Categoria/critério inválido.')
+            key='billing_mode:'+code+':'+effective;value={'effective':effective,'code':code,'mode':mode,'representative':'latest'}
+        old=c.execute('SELECT value FROM metadata WHERE key=?',(key,)).fetchone()
+        c.execute('INSERT OR REPLACE INTO metadata VALUES(?,?)',(key,json.dumps(value,ensure_ascii=False)))
+        return {'previous_version':json.loads(old[0]) if old else None}
     if kind!='rule':raise ValueError('Tipo de alteração inválido.')
     tss=norm(change.get('tss'));cause=norm(change.get('cause'));form=norm(change.get('form'));decision=change.get('decision');code=change.get('code')
     if not tss or decision not in ('Cobrar','Excluir','Pendente'):raise ValueError('TSS e situação válidos obrigatórios.')
@@ -305,17 +380,17 @@ def _source_stamp(root):
 def _impact(c,root,change):
     month_bounds(change.get('effective',''));future(c,change['effective'])
     months={change['effective']}
-    months.update(r[0] for r in c.execute('SELECT DISTINCT substr(day,1,7) FROM commercial WHERE day>=?',(change['effective']+'-01',)))
+    months.update(r[0] for r in c.execute('SELECT DISTINCT month FROM commercial WHERE month IS NOT NULL AND month NOT IN (SELECT month FROM approvals)'))
     months.update(r[0] for r in c.execute('SELECT month FROM geo WHERE month>=?',(change['effective'],)))
     def totals(month):
         p=preview(root,month,c)
-        return {'inspection_cents':p['inspection_cents'],'geo_cents':p['geo']['cents'],'pending':p['pending'],'services':p['services'],'rates':p['rates']}
+        return {'inspection_cents':p['inspection_cents'],'geo_cents':p['geo']['cents'],'pending':p['pending'],'services':p['services'],'rates':p['rates'],'deadline':inspections.summary(root,*month_bounds(month),policy=p['policy'])[0]}
     before={m:totals(m) for m in sorted(months)}
     c.execute('SAVEPOINT proposed_catalog')
     try:
         _write_change(c,change);after={m:totals(m) for m in sorted(months)}
     finally:c.execute('ROLLBACK TO proposed_catalog');c.execute('RELEASE proposed_catalog')
-    return [{'month':m,'before':before[m],'after':after[m],'delta_cents':after[m]['inspection_cents']+after[m]['geo_cents']-before[m]['inspection_cents']-before[m]['geo_cents']} for m in sorted(months)]
+    return [{'month':m,'before':before[m],'after':after[m],'delta_cents':after[m]['inspection_cents']+after[m]['geo_cents']-before[m]['inspection_cents']-before[m]['geo_cents']} for m in sorted(months) if m>=change['effective'] or before[m]!=after[m]]
 
 
 def prepare_change(root,change):
@@ -339,3 +414,65 @@ def confirm_change(root,plan,confirmed=False):
         before=_write_change(c,plan['change'])
         audit(c,'Alteração de catálogo confirmada',{'change':plan['change'],'before':before,'impact':actual,'token':plan['token']})
     return actual
+
+
+def execution_stamp(value,day):
+    stamp=inspections.date_value(value)
+    if stamp is None:
+        try:stamp=datetime.fromisoformat(str(value)).isoformat()
+        except (ValueError,TypeError):return None
+    return stamp if day and stamp[:10]==day else None
+
+
+def _migrate_contract(c,root):
+    """Backup verificado antes de alterar somente a projeção financeira."""
+    if c.execute('PRAGMA user_version').fetchone()[0]>=2:return
+    backup(Path(root).resolve()/'financeiro.sqlite3')
+    try:
+        c.execute('BEGIN IMMEDIATE')
+        if c.execute('PRAGMA user_version').fetchone()[0]>=2:c.rollback();return
+        c.execute('ALTER TABLE commercial ADD COLUMN city_key TEXT')
+        c.execute('ALTER TABLE commercial ADD COLUMN executed_at TEXT')
+        c.execute('ALTER TABLE commercial ADD COLUMN month TEXT')
+        cursor=c.execute('SELECT id,city,day,raw_hash FROM commercial ORDER BY id')
+        # O timestamp vem do registro bruto preservado no banco operacional.
+        source=Path(root).resolve()/'vistorias.sqlite3'
+        if not source.exists() and c.execute('SELECT 1 FROM commercial LIMIT 1').fetchone():raise ValueError('Banco operacional ausente; migração cancelada sem alterar os dados.')
+        if source.exists():
+            with closing(sqlite3.connect(source.as_uri()+'?mode=ro',uri=True)) as op:
+                while batch:=cursor.fetchmany(2000):
+                    ids=[r['id'] for r in batch];raw={id:json.loads(text) for id,text in op.execute('SELECT id,raw FROM visits WHERE id IN ('+','.join('?' for _ in ids)+')',ids)}
+                    if len(raw)!=len(ids):raise ValueError('Projeção sem origem correspondente; migração cancelada.')
+                    c.executemany('UPDATE commercial SET city_key=?,executed_at=?,month=? WHERE id=?',[(norm(r['city']),execution_stamp(raw.get(r['id'],{}).get('Data Fim Execução'),r['day']),r['day'][:7] if r['day'] else None,r['id']) for r in batch])
+        c.execute('CREATE INDEX commercial_month ON commercial(month,closed,city_key)')
+        c.execute('CREATE INDEX commercial_scope ON commercial(city_key,month)')
+        c.execute('CREATE INDEX commercial_month_keys ON commercial(month,contract,os)')
+        c.execute('''CREATE TABLE frozen_charges(month TEXT NOT NULL,visit_id INTEGER NOT NULL,contract TEXT NOT NULL,code TEXT NOT NULL,os TEXT NOT NULL,cents INTEGER NOT NULL,PRIMARY KEY(month,visit_id))''')
+        c.execute('CREATE INDEX frozen_os ON frozen_charges(contract,code,os,month)')
+        for old in c.execute('SELECT month,payload FROM approvals').fetchall():
+            sql,args=classified_sql(old['month'],c)
+            calculated=c.execute("SELECT COALESCE(SUM(cents),0) FROM ("+sql+") WHERE reason='Faturável'",args).fetchone()[0]
+            if calculated!=json.loads(old['payload'])['inspection_cents']:raise ValueError('Reconstrução histórica não coincide; migração cancelada, restaure/verifique o backup.')
+            c.execute("INSERT INTO frozen_charges SELECT month,id,contract,code,os,cents FROM ("+sql+") WHERE reason='Faturável'",args)
+        initial=contract_policy.initial('2026-09')
+        c.execute('INSERT OR IGNORE INTO metadata VALUES(?,?)',('contract_scope:2026-09',json.dumps({'effective':'2026-09','allowed':initial['allowed'],'excluded':initial['excluded']},ensure_ascii=False)))
+        for code,mode in initial['modes'].items():c.execute('INSERT OR IGNORE INTO metadata VALUES(?,?)',('billing_mode:'+code+':2026-09',json.dumps({'effective':'2026-09','code':code,'mode':mode,'representative':'latest'})))
+        c.execute('PRAGMA user_version=2')
+        audit(c,'Preparar escopo e cobrança contratual',{'version':2,'initial_scope':contract_policy.initial('2026-09'),'representative':'Última execução elegível; empate pelo menor ID original','historical_approvals_preserved':True})
+        c.commit()
+    except Exception:c.rollback();raise
+
+
+def municipal_summary(root,month):
+    return preview(root,month)['municipalities']
+
+
+def export_period_catalog(root,month):
+    main=export_catalog(root,month)
+    main['period_catalogs']={}
+    for m in main['contexts']:
+        period=export_catalog(root,m,include_frozen=False);period.pop('frozen_charges',None);period.pop('contexts',None);main['period_catalogs'][m]=period
+    source=Path(root).resolve()/'vistorias.sqlite3'
+    if source.exists():
+        with closing(sqlite3.connect(source.as_uri()+'?mode=ro',uri=True)) as c:main['import_order']=[r[0] for r in c.execute('SELECT sha FROM imports ORDER BY id')]
+    return main

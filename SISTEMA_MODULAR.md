@@ -1,3 +1,5 @@
+> **Documentação da etapa anterior.** Para as regras comerciais e a atualização consolidada atual, consulte [ESCOPO_CONTRATUAL_VISTORIAS.md](ESCOPO_CONTRATUAL_VISTORIAS.md). As quantidades e pendências desta etapa são históricas.
+
 # Gestão modular do contrato Sabesp
 
 ## O que muda e o que permanece preservado

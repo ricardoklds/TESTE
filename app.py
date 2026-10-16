@@ -28,6 +28,10 @@ with st.sidebar:
     st.caption('Dados locais · Originais preservados')
 
 data_path=Path(os.environ.get('APP_DATA_DIR',str(Path(__file__).parent/'data')))
+if module=='Configurações' and page=='Municípios do Contrato':
+    import inspection_settings_ui
+    inspection_settings_ui.render(data_path,month)
+    st.stop()
 if module=='Vistorias':
     import inspection_module_ui
     inspection_module_ui.render(data_path,month,page)

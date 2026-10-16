@@ -40,8 +40,10 @@ def render(data,month,show_import=True,show_fine=True):
     start,end=start.isoformat(),end.isoformat()
     with api.connect(root) as c:
         version=tuple(c.execute('SELECT COUNT(*),COALESCE(MAX(id),0) FROM imports').fetchone())
-    total,rows,pending=cached_summary(root,version,start,end)
-    scope=(version,start,end)
+    import inspection_contract
+    scope_policy=inspection_contract.from_root(root,month)
+    total,rows,pending=cached_summary(root,(version,str(scope_policy)),start,end)
+    scope=(version,start,end,str(scope_policy))
     with st.container(border=True):
         st.subheader('Meta contratual');st.metric('Meta de vistorias dentro do prazo','99%')
         if total['total']:
@@ -51,8 +53,9 @@ def render(data,month,show_import=True,show_fine=True):
         st.caption('No mínimo 99% das vistorias concluídas devem estar dentro do prazo para evitar glosa contratual. O limite é inclusivo: execução até o prazo final está dentro do prazo.')
     cols=st.columns(5)
     for col,label,val in zip(cols,['Vistorias com prazo apurável','Dentro do prazo','Fora do prazo','% dentro do prazo','% fora do prazo'],[total['total'],total['inside'],total['outside'],f"{total['percent']:.2f}%" if total['percent'] is not None else '—',f"{total['outside_percent']:.2f}%" if total['outside_percent'] is not None else '—']):col.metric(label,val)
-    if pending:st.warning(f'{pending} registros fechados pendentes de data/prazo. Os sem data de execução não podem ser atribuídos a este período; são informados globalmente. A meta é provisória e o cálculo de multa permanece bloqueado.')
-    st.caption('Base: OS Fechada e Operação Fechada, independentemente de aprovação, recusa ou glosa. Período pela Data Fim Execução. Tempo Residual é referência de conferência, não substitui as datas.')
+    if pending:st.warning(f'{pending} registros fechados pendentes de data/prazo ou município autorizado. Os sem data de execução não podem ser atribuídos a este período; são informados globalmente. A meta é provisória e o cálculo de multa permanece bloqueado.')
+    if total.get('out_of_scope'):st.info(f"{total['out_of_scope']} registros fora do escopo do contrato: preservados na auditoria, fora dos indicadores contratuais.")
+    st.caption('Escopo municipal exclusivo de Vistorias. Quantidade operacional conta ocorrências, não OS faturáveis. Base: OS Fechada e Operação Fechada, independentemente de aprovação, recusa ou glosa. Período pela Data Fim Execução. Tempo Residual é referência de conferência, não substitui as datas.')
     frame=pd.DataFrame([{'Município':r['city'],'Vistorias válidas':r['total'],'Dentro do prazo':r['inside'],'Fora do prazo':r['outside'],'% fora':r['outside_percent'],'Meta contratual (barra)':r['percent'],'Situação':'Apuração incompleta' if pending else ('Meta atingida' if r['met'] else 'Meta não atingida')} for r in rows])
     st.dataframe(frame,hide_index=True,column_config={'Meta contratual (barra)':st.column_config.ProgressColumn('% dentro · meta 99%',min_value=0,max_value=100,format='%.2f%%')})
     if show_fine:

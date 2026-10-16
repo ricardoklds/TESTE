@@ -10,7 +10,7 @@ class Inspections(unittest.TestCase):
  def tearDown(self):self.tmp.cleanup()
  def content(self):
   w=openpyxl.Workbook();s=w.active;s.title='Base';s.append(api.HEADERS)
-  for os,end,actual,city in [('001','02/09/2026 10:00','02/09/2026 10:00','A'),('001','02/09/2026 10:00','02/09/2026 10:01','A'),('003','02/09/2026 10:00','03/09/2026 10:00','B')]:s.append([os,city,'Fechada','Fechada','01/09/2026 00:00',end,actual,'VISTORIA'])
+  for os,end,actual,city in [('001','02/09/2026 10:00','02/09/2026 10:00','AGUDOS'),('001','02/09/2026 10:00','02/09/2026 10:01','AGUDOS'),('003','02/09/2026 10:00','03/09/2026 10:00','BOCAINA')]:s.append([os,city,'Fechada','Fechada','01/09/2026 00:00',end,actual,'VISTORIA'])
   b=BytesIO();w.save(b);return b.getvalue()
  def test_boundary_status_and_missing(self):
   r={'Status da OS':' Fechada ','Status da Operação':'FECHADA','Prazo de Execução - Fim':'02/09/2026 10:00','Data Fim Execução':'02/09/2026 10:00'}
@@ -27,7 +27,7 @@ class Inspections(unittest.TestCase):
   with api.connect(self.root) as c:self.assertEqual(c.execute('SELECT COUNT(*) FROM visits').fetchone()[0],3);self.assertEqual(c.execute('SELECT COUNT(*) FROM penalties').fetchone()[0],1)
  def test_exact_duplicates_rollback_and_pending_blocks_fine(self):
   api.import_file(self.root,self.content(),'a.xlsx','Base')
-  w=openpyxl.load_workbook(BytesIO(self.content()));w.active.append(['004','A','Fechada','Fechada','','','02/09/2026 10:00','VISTORIA']);b=BytesIO();w.save(b)
+  w=openpyxl.load_workbook(BytesIO(self.content()));w.active.append(['004','AGUDOS','Fechada','Fechada','','','02/09/2026 10:00','VISTORIA']);b=BytesIO();w.save(b)
   with self.assertRaises(Exception):api.import_file(self.root,b.getvalue(),'changed.xlsx','Base')
   with api.connect(self.root) as c:
    self.assertEqual(c.execute('SELECT COUNT(*) FROM imports').fetchone()[0],1)
@@ -54,7 +54,7 @@ class Inspections(unittest.TestCase):
    with api.connect(root) as c:self.assertEqual(c.execute('SELECT COUNT(*) FROM penalties').fetchone()[0],0)
  def test_exact_target_no_penalty(self):
   with api.connect(self.root) as c:
-   for i in range(100):c.execute('INSERT INTO visits(import_id,line,day,status,fingerprint,raw) VALUES(?,?,?,?,?,?)',(1,i,'2026-09-01','Dentro do prazo' if i<99 else 'Fora do prazo',str(i),'{}'))
+   for i in range(100):c.execute('INSERT INTO visits(import_id,line,day,status,fingerprint,raw,city) VALUES(?,?,?,?,?,?,?)',(1,i,'2026-09-01','Dentro do prazo' if i<99 else 'Fora do prazo',str(i),'{}','AGUDOS'))
   self.assertTrue(api.summary(self.root,'2026-09-01','2026-09-30')[0]['met'])
   with self.assertRaises(ValueError):api.fine(self.root,'2026-09-01','2026-09-30',10000,'Doc',True)
 if __name__=='__main__':unittest.main()

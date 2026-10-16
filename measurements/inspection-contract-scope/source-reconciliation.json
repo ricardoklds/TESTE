@@ -1,0 +1,172 @@
+{
+  "source": "576513-setembro sanesi.xlsx",
+  "source_sha256": "5c71eb3f941ae38d49b4afc8f612ad9da6b09cf0bc239a2d046f0bd47b410a58",
+  "sheet": "Número OS",
+  "source_rows": 4431,
+  "production_accessed": false,
+  "approved": false,
+  "fine_applied": false,
+  "excel_unchanged": true,
+  "before": {
+    "services": [
+      {
+        "code": "200014105",
+        "name": "Vistoria para aprovação de ligação",
+        "quantity": 1219,
+        "cents": 2742750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014106",
+        "name": "Vistoria predial",
+        "quantity": 2679,
+        "cents": 6027750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014104",
+        "name": "Vistoria de atualização cadastral",
+        "quantity": 284,
+        "cents": 340800,
+        "unit_cents": 1200
+      }
+    ],
+    "inspection_cents": 9111300,
+    "pending": 247,
+    "groups": [
+      {
+        "reason": "Excluído por classificação confirmada",
+        "code": null,
+        "quantity": 2,
+        "cents": 0
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014104",
+        "quantity": 284,
+        "cents": 340800
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014105",
+        "quantity": 1219,
+        "cents": 2742750
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014106",
+        "quantity": 2679,
+        "cents": 6027750
+      },
+      {
+        "reason": "Pendente: OS repetida",
+        "code": "200014105",
+        "quantity": 24,
+        "cents": 0
+      },
+      {
+        "reason": "Pendente: ligação inativa",
+        "code": null,
+        "quantity": 223,
+        "cents": 0
+      }
+    ]
+  },
+  "after": {
+    "services": [
+      {
+        "code": "200014105",
+        "name": "Vistoria para aprovação de ligação",
+        "quantity": 1231,
+        "cents": 2769750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014106",
+        "name": "Vistoria predial",
+        "quantity": 2679,
+        "cents": 6027750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014104",
+        "name": "Vistoria de atualização cadastral",
+        "quantity": 284,
+        "cents": 340800,
+        "unit_cents": 1200
+      }
+    ],
+    "inspection_cents": 9138300,
+    "pending": 0,
+    "groups": [
+      {
+        "reason": "Excluído por classificação confirmada",
+        "code": null,
+        "quantity": 2,
+        "cents": 0
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014104",
+        "quantity": 284,
+        "cents": 340800
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014105",
+        "quantity": 1231,
+        "cents": 2769750
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014106",
+        "quantity": 2679,
+        "cents": 6027750
+      },
+      {
+        "reason": "Fora do escopo do contrato",
+        "code": null,
+        "quantity": 223,
+        "cents": 0
+      },
+      {
+        "reason": "Sem cobrança adicional — OS já representada",
+        "code": "200014105",
+        "quantity": 12,
+        "cents": 0
+      }
+    ]
+  },
+  "independent": {
+    "quantities": {
+      "200014106": 2679,
+      "200014104": 284,
+      "200014105": 1231
+    },
+    "cents": {
+      "200014106": 6027750,
+      "200014104": 340800,
+      "200014105": 2769750
+    },
+    "total_cents": 9138300,
+    "processed": 4431,
+    "reasons": {
+      "Excluído por classificação confirmada": 2,
+      "Faturável": 4194,
+      "Sem cobrança adicional — OS já representada": 12,
+      "Fora do escopo do contrato": 223
+    }
+  },
+  "deadline": {
+    "total": 4208,
+    "inside": 3936,
+    "outside": 272,
+    "out_of_scope": 223,
+    "municipality_pending": 0,
+    "percent": 93.5361216730038,
+    "outside_percent": 6.4638783269961975,
+    "met": false
+  },
+  "scope_authority": "Confirmação explícita do usuário; 31 municípios da base filtrada original, exclusão permanente de Araçoiaba da Serra e Macatuba.",
+  "status": "Prévia conciliada, não aprovada. Não inclui geolocalização."
+}

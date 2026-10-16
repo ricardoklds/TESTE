@@ -45,9 +45,9 @@ class ModularFinanceTests(unittest.TestCase):
   backups=list((self.root/'backups').glob('*.sqlite3'));self.assertGreaterEqual(len(backups),2)
   with sqlite3.connect(backups[0]) as c:self.assertEqual(c.execute('PRAGMA integrity_check').fetchone()[0],'ok')
  def test_geo_two_modes_reference_no_double_count_and_history(self):
-  self.load();bill.save_geo(self.root,'2026-09','Por município',3,{'A':1,'B':2},'Doc')
+  self.load();bill.save_geo(self.root,'2026-09','Por município',3,{'AGUDOS':1,'BOCAINA':2},'Doc')
   p=bill.preview(self.root,'2026-09');self.assertEqual(p['geo']['cents'],3600);self.assertTrue(p['geo']['ready'])
-  bill.save_geo(self.root,'2026-09','Total mensal',4,{'A':1,'B':2},'Correção');self.assertFalse(bill.preview(self.root,'2026-09')['geo']['ready'])
+  bill.save_geo(self.root,'2026-09','Total mensal',4,{'AGUDOS':1,'BOCAINA':2},'Correção');self.assertFalse(bill.preview(self.root,'2026-09')['geo']['ready'])
   with self.assertRaises(ValueError):bill.save_geo(self.root,'2026-09','Por município',None,{'Bocaina':1,'BOCAÍNA':2},'Doc')
   with bill.connect(self.root) as c:self.assertEqual(c.execute("SELECT COUNT(*) FROM audit WHERE action='Geolocalização'").fetchone()[0],2)
  def test_ambiguous_rules_pending_inactive_service_and_new_service(self):

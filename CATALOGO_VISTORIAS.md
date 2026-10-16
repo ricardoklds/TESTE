@@ -1,3 +1,5 @@
+> **Documentação da etapa anterior.** Para as regras comerciais e a atualização consolidada atual, consulte [ESCOPO_CONTRATUAL_VISTORIAS.md](ESCOPO_CONTRATUAL_VISTORIAS.md). As quantidades e pendências desta etapa são históricas.
+
 # Correção de classificação e edição segura do catálogo de Vistorias
 
 Esta entrega retifica o mapeamento comercial de **VERIFICAR SERVIÇO EXECUTADO** para **Vistoria Predial, código 200014106, R$22,50**, conforme a nova confirmação do usuário. Substitui, nesse ponto, o mapeamento e a prévia descritos na documentação anterior. Não modifica código, preços, regras, calendário ou fechamento de Leituras.

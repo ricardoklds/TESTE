@@ -9,6 +9,8 @@ import inspection_billing as api
 @st.cache_data(show_spinner=False,max_entries=32)
 def cached_preview(root,month,revision):return api.financial(root,month)
 @st.cache_data(show_spinner=False,max_entries=32)
+def cached_municipal(root,month,revision):return api.municipal_summary(root,month)
+@st.cache_data(show_spinner=False,max_entries=32)
 def cached_details(root,month,revision,offset):return api.detail_page(root,month,offset)
 @st.cache_data(show_spinner=False,max_entries=2)
 def workbook_sheets(content):
@@ -54,6 +56,9 @@ def render(data,month,page):
     st.dataframe(pd.DataFrame(p['services']),hide_index=True)
     with st.expander('Quantidades por valor unitário efetivo'):st.dataframe(pd.DataFrame(p.get('rates',[])),hide_index=True)
     st.dataframe(pd.DataFrame(p['groups']),hide_index=True)
+    with st.expander('Produção e faturamento contratual por município'):
+        st.dataframe(pd.DataFrame(p['municipalities'] if 'municipalities' in p else cached_municipal(root,month,revision)),hide_index=True)
+        st.caption('Sem atribuição de funcionário: o Excel de Vistorias não informa o executor individual.')
     if p['undated']:st.warning(f"{p['undated']} registros fechados sem data de execução: pendências globais, sem competência presumida.")
     if page=='Painel de Vistorias':
         import inspections
@@ -94,7 +99,7 @@ def render(data,month,page):
             try:api.approve(root,month,prepared[2],evidence,confirmed);st.rerun()
             except ValueError as e:st.error(str(e))
     if st.button('Preparar catálogo para validação independente'):
-        st.session_state['inspection_catalog_export']=(month,revision,json.dumps(api.export_catalog(root,month),ensure_ascii=False,indent=2))
+        st.session_state['inspection_catalog_export']=(month,revision,json.dumps(api.export_period_catalog(root,month),ensure_ascii=False,indent=2))
     config=st.session_state.get('inspection_catalog_export')
     if config and config[:2]==(month,revision):st.download_button('Baixar catálogo de conferência',config[2],file_name=f'catalogo-vistorias-{month}.json',on_click='ignore')
     with st.expander('Conferir pendência individual (sem alterar dados originais)'):
@@ -121,7 +126,7 @@ def import_panel(root):
         except Exception as e:st.error(str(e));return
         if not options:st.error('Nenhuma aba de registros de vistorias válida.');return
         sheet=st.selectbox('Aba original',options,index=options.index('Número OS') if 'Número OS' in options else 0)
-        yes=st.checkbox('Confirmo esta aba original. Duplicidades e ligação inativa permanecem para conferência comercial, sem cobrança automática.')
+        yes=st.checkbox('Confirmo esta aba original. Escopo e critérios comerciais vigentes serão aplicados; serviços desconhecidos permanecem pendentes.')
         if st.button('Importar Vistorias',disabled=not yes):
             try:
                 with st.status('Importando em lotes…') as status:
@@ -181,6 +186,19 @@ def catalog(root,month):
                 change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None,'evidence':evidence}
                 with st.spinner('Calculando impacto das competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
             except (ValueError,InvalidOperation) as e:st.error(str(e))
+    import inspection_contract
+    policy=inspection_contract.from_root(root,month)
+    st.subheader('Critério de faturamento por categoria')
+    st.caption('Aprovação: uma cobrança por OS, representada pela última execução elegível. Empates pelo menor ID original. Outras categorias continuam em conferência manual de repetições até mudança explícita.')
+    mode_code=st.selectbox('Categoria do critério',[s['code'] for s in services if s['code']!='geo'])
+    with st.form('billing_mode'):
+        mode=st.selectbox('Critério de cobrança',list(inspection_contract.LABELS),index=list(inspection_contract.LABELS).index(policy['modes'].get(mode_code,'manual')),format_func=lambda v:inspection_contract.LABELS[v])
+        effective=st.text_input('Vigência do critério',value=month)
+        evidence=st.text_input('Justificativa/documento do critério')
+        if st.form_submit_button('Calcular impacto do critério'):
+            try:
+                with st.spinner('Simulando critérios e competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,{'kind':'billing_mode','code':mode_code,'mode':mode,'effective':effective,'evidence':evidence})
+            except ValueError as e:st.error(str(e))
     plan=st.session_state.get('catalog_plan')
     if plan and plan['root']==str(Path(root).resolve()):
         st.subheader('Prévia de impacto — nada foi salvo')
@@ -210,7 +228,7 @@ def geolocation(root,month):
     with api.connect(root) as c:
         old=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
         initial=json.loads(old['cities']) if old else {}
-    st.caption('O modo principal define a cobrança; o outro é só conferência. Divergências impedem aprovação. Nenhuma quantidade é cadastrada automaticamente.')
+    st.caption('O modo principal define a cobrança; o outro é só conferência. Informe total mensal já restrito aos municípios do contrato. Por município, cidades fora do escopo ficam preservadas, sem faturamento. Divergências impedem aprovação. Nenhuma quantidade é cadastrada automaticamente.')
     with st.form('geolocation'):
         mode=st.selectbox('Modo principal',['Total mensal','Por município'],index=0 if not old or old['mode']=='Total mensal' else 1)
         total=st.text_input('Total Sabesp (opcional para conferência por município)',value=str(old['total']) if old and old['total'] is not None else '')
