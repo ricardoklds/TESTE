@@ -52,6 +52,7 @@ def render(data,month,page):
     if p['approved']:st.success('Competência aprovada. Valores preservados por fotografia mensal.')
     else:st.warning('PRÉVIA — não é fechamento definitivo; depende da conciliação e aprovação.')
     st.dataframe(pd.DataFrame(p['services']),hide_index=True)
+    with st.expander('Quantidades por valor unitário efetivo'):st.dataframe(pd.DataFrame(p.get('rates',[])),hide_index=True)
     st.dataframe(pd.DataFrame(p['groups']),hide_index=True)
     if p['undated']:st.warning(f"{p['undated']} registros fechados sem data de execução: pendências globais, sem competência presumida.")
     if page=='Painel de Vistorias':
@@ -136,9 +137,14 @@ def import_panel(root):
         with st.spinner('Backup inicial e atualização incremental…'):api.sync(root)
         st.rerun()
 
+@st.cache_data(show_spinner=False,max_entries=16)
+def cached_catalog(root,revision):return api.catalog_state(root)
+
 def catalog(root,month):
     services=api.service_list(root,month);st.dataframe(pd.DataFrame(services),hide_index=True)
-    st.caption('Os códigos 200014104/105/106 são contratuais confirmados. geo é apenas identificador interno; seu código contratual não foi informado. Sem associação aproximada de TSS.')
+    state=cached_catalog(root,api.revision(root))
+    st.caption('Preços de categoria e preços específicos por TSS são distintos. Alterar o preço da categoria afeta todas as descrições que a seguem; preço específico afeta somente o TSS. Não altera Leituras.')
+    st.info('Correção confirmada: VERIFICAR SERVIÇO EXECUTADO pertence a Predial (200014106, R$ 22,50). Em instalações anteriores, selecione esse TSS, escolha Predial com vigência 2026-09, confira o impacto e confirme. Meses aprovados permanecem bloqueados.')
     selected=st.selectbox('Serviço',['Novo serviço']+[s['code'] for s in services])
     old=next((s for s in services if s['code']==selected),None)
     with st.form('price_service'):
@@ -148,24 +154,57 @@ def catalog(root,month):
         effective=st.text_input('Vigência (AAAA-MM)',value=month)
         active=st.checkbox('Serviço ativo',value=bool(old['active']) if old else True)
         evidence=st.text_input('Documento/justificativa do preço')
-        if st.form_submit_button('Salvar serviço/preço'):
-            try:api.save_service(root,code,name,effective,cents(price),active,evidence);st.rerun()
+        if st.form_submit_button('Calcular impacto do serviço/preço'):
+            try:
+                change={'kind':'service','code':code,'name':name,'effective':effective,'cents':cents(price),'active':active,'evidence':evidence}
+                with st.spinner('Simulando em transação reversível…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
             except (ValueError,InvalidOperation) as e:st.error(str(e))
     st.subheader('Classificação das descrições originais')
-    st.caption('TSS exato após padronização de espaços, caixa e acentos. Causa/formulário em branco abrangem todos os resultados. Regras específicas prevalecem; empate fica pendente.')
+    options=sorted({r['tss'] for r in state['rules']})
+    choice=st.selectbox('Descrição TSS para editar',['Nova descrição']+options)
+    candidates=[r for r in state['rules'] if r['tss']==choice and r['effective']<=month and not r['cause'] and not r['form']]
+    current=max(candidates,key=lambda r:(r['effective'],r['id'])) if candidates else None
+    codes=[s['code'] for s in services if s['code']!='geo'];names={s['code']:s['name'] for s in services}
+    situation={'Cobrar':'Faturável','Excluir':'Não faturável','Pendente':'Pendente'}
     with st.form('map_service'):
-        tss=st.text_input('TSS original');cause=st.text_input('Causa Resultado (opcional)');form=st.text_input('Formulário de Baixa (opcional)')
-        decision=st.selectbox('Decisão',['Cobrar','Excluir']);code=st.selectbox('Serviço para cobrança',[s['code'] for s in services if s['code']!='geo'])
+        tss=st.text_input('TSS original',value='' if choice=='Nova descrição' else choice)
+        cause=st.text_input('Causa Resultado (opcional)');form=st.text_input('Formulário de Baixa (opcional)')
+        decision=st.selectbox('Situação comercial',list(situation),index=list(situation).index(current['decision']) if current else 2,format_func=lambda v:situation[v])
+        code=st.selectbox('Categoria para cobrança',codes,index=codes.index(current['code']) if current and current['code'] in codes else 0,format_func=lambda k:names[k]+' · '+k)
+        custom=[o for o in state['tss_prices'] if o['tss']==choice and o['effective']<=month]
+        rate=max(custom,key=lambda o:o['effective'])['cents'] if custom else None
+        unit=st.text_input('Preço específico deste TSS (R$; vazio segue a categoria)',value=f'{rate/100:.2f}'.replace('.',',') if rate is not None else '')
+        st.caption('Ex.: categoria Predial e preço específico 12,00 altera só esta descrição. Deixar vazio volta a seguir a tarifa da categoria. Preços específicos abrangem o TSS inteiro, não apenas a causa/formulário.')
         effective=st.text_input('Competência inicial da classificação',value=month);evidence=st.text_input('Documento/justificativa da classificação')
-        if st.form_submit_button('Salvar classificação'):
-            try:api.save_rule(root,tss,cause,form,effective,decision,code,evidence);st.rerun()
+        if st.form_submit_button('Calcular impacto da classificação'):
+            try:
+                change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None,'evidence':evidence}
+                with st.spinner('Calculando impacto das competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
+            except (ValueError,InvalidOperation) as e:st.error(str(e))
+    plan=st.session_state.get('catalog_plan')
+    if plan and plan['root']==str(Path(root).resolve()):
+        st.subheader('Prévia de impacto — nada foi salvo')
+        st.write(plan['change'])
+        st.dataframe(pd.DataFrame([{'Competência':r['month'],'Vistorias antes':money(r['before']['inspection_cents']),'Vistorias depois':money(r['after']['inspection_cents']),'Geolocalização antes':money(r['before']['geo_cents']),'Geolocalização depois':money(r['after']['geo_cents']),'Diferença em centavos':r['delta_cents'],'Pendências antes':r['before']['pending'],'Pendências depois':r['after']['pending']} for r in plan['impact']]),hide_index=True)
+        with st.expander('Quantidades e valores por categoria antes/depois'):
+            for r in plan['impact']:
+                st.write(r['month']);st.dataframe(pd.DataFrame(r['before']['services']),hide_index=True);st.dataframe(pd.DataFrame(r['after']['services']),hide_index=True)
+        with st.form('confirm_catalog_change'):
+            yes=st.checkbox('Conferi a vigência e o impacto acima e confirmo esta alteração do catálogo')
+            submit=st.form_submit_button('Confirmar alteração após impacto')
+        if submit:
+            try:api.confirm_change(root,plan,yes);st.session_state.pop('catalog_plan',None);st.rerun()
             except ValueError as e:st.error(str(e))
+        if st.button('Cancelar alteração'):st.session_state.pop('catalog_plan',None);st.rerun()
     page=st.number_input('Página do catálogo',min_value=1,step=1)
+    history_page=st.number_input('Página do histórico',min_value=1,step=1)
     with api.connect(root) as c:
         rules=[dict(r) for r in c.execute('SELECT * FROM rules ORDER BY tss,effective DESC LIMIT 50 OFFSET ?',((page-1)*50,))]
-        history=[dict(r) for r in c.execute('SELECT * FROM audit ORDER BY id DESC LIMIT 50')]
+        history=[dict(r) for r in c.execute('SELECT * FROM audit ORDER BY id DESC LIMIT 50 OFFSET ?',((history_page-1)*50,))]
     st.dataframe(pd.DataFrame(rules),hide_index=True)
-    with st.expander('Histórico de alterações (50 eventos mais recentes)'):st.dataframe(pd.DataFrame(history),hide_index=True)
+    st.dataframe(pd.DataFrame(state['tss_prices']),hide_index=True)
+    with st.expander('Histórico de alterações (50 eventos por página)'):st.dataframe(pd.DataFrame(history),hide_index=True)
+
 
 def geolocation(root,month):
     with api.connect(root) as c:

@@ -200,3 +200,6 @@ Indicadores operacionais de prazo de vistorias: consulte [VISTORIAS_PRAZO.md](VI
 
 
 Sistema modular, catálogo de Vistorias, Geolocalização e Fechamento Geral: consulte [SISTEMA_MODULAR.md](SISTEMA_MODULAR.md). Essa documentação substitui o fluxo anterior de multa por base manual no aplicativo; simulações antigas permanecem preservadas.
+
+
+Correção de VERIFICAR SERVIÇO EXECUTADO para Predial e editor com prévia de impacto: [CATALOGO_VISTORIAS.md](CATALOGO_VISTORIAS.md). Esta correção substitui o enquadramento cadastral anterior desse TSS; setembro continua pendente de validação comercial.

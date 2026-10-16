@@ -104,7 +104,7 @@ def save_service(root,code,name,effective,cents,active,evidence):
         audit(c,'Preço/vigência',{'code':code,'name':name,'effective':effective,'cents':cents,'active':bool(active),'evidence':evidence,'before':dict(before) if before else None})
 
 def save_rule(root,tss,cause,form,effective,decision,code,evidence):
-    if decision not in ('Cobrar','Excluir') or not norm(tss) or not evidence.strip():raise ValueError('TSS, decisão e comprovação obrigatórios.')
+    if decision not in ('Cobrar','Excluir','Pendente') or not norm(tss) or not evidence.strip():raise ValueError('TSS, decisão e comprovação obrigatórios.')
     with connect(root) as c:
         c.execute('BEGIN IMMEDIATE');future(c,effective)
         if decision=='Cobrar' and (code=='geo' or not c.execute('SELECT 1 FROM services WHERE code=?',(code,)).fetchone()):raise ValueError('Serviço contratual de vistoria inválido.')
@@ -152,19 +152,22 @@ def classified_sql(month):
     matches AS (SELECT v.id,r.code,r.decision,ROW_NUMBER() OVER(PARTITION BY v.id ORDER BY (r.cause<>'')+(r.form<>'') DESC,r.id DESC) priority,
       COUNT(*) OVER(PARTITION BY v.id,(r.cause<>'')+(r.form<>'')) ambiguity FROM commercial v JOIN applicable r ON r.tss=v.tss AND (r.cause='' OR r.cause=v.cause) AND (r.form='' OR r.form=v.form) WHERE v.day BETWEEN :first AND :last),
     repeated AS (SELECT contract,os FROM commercial WHERE day BETWEEN :first AND :last AND os<>'' GROUP BY contract,os HAVING COUNT(*)>1),
+    override_values AS (SELECT json_extract(value,'$.tss') tss,json_extract(value,'$.effective') effective,json_extract(value,'$.cents') cents FROM metadata WHERE key LIKE 'tss_price:%'),
+    overrides AS (SELECT tss,cents FROM (SELECT tss,cents,ROW_NUMBER() OVER(PARTITION BY tss ORDER BY effective DESC) precedence FROM override_values WHERE effective<=:month) WHERE precedence=1),
     priced AS (SELECT p.* FROM prices p WHERE effective=(SELECT MAX(effective) FROM prices x WHERE x.code=p.code AND x.effective<=:month)),
     chosen AS (SELECT v.*,COALESCE(rv.decision,m.decision) decision,COALESCE(rv.code,m.code) code,rv.visit_id reviewed,COALESCE(m.ambiguity,0) ambiguity,
       EXISTS(SELECT 1 FROM repeated d WHERE d.contract=v.contract AND d.os=v.os) duplicate
       FROM commercial v LEFT JOIN matches m ON m.id=v.id AND m.priority=1 LEFT JOIN reviews rv ON rv.visit_id=v.id AND rv.month=:month WHERE v.day BETWEEN :first AND :last),
-    resolved AS (SELECT v.*,p.cents,p.active,CASE WHEN closed=0 THEN 'Não concluída'
+    resolved AS (SELECT v.*,CASE WHEN o.cents IS NOT NULL THEN o.cents ELSE p.cents END cents,p.active,CASE WHEN closed=0 THEN 'Não concluída'
       WHEN decision='Excluir' AND (reviewed IS NOT NULL OR ambiguity<=1) THEN 'Excluído por classificação confirmada'
       WHEN reviewed IS NULL AND duplicate THEN 'Pendente: OS repetida'
       WHEN reviewed IS NULL AND inactive THEN 'Pendente: ligação inativa'
       WHEN reviewed IS NULL AND ambiguity>1 THEN 'Pendente: regras ambíguas'
+      WHEN decision='Pendente' THEN 'Pendente: classificação definida pelo usuário'
       WHEN os='' THEN 'Pendente: OS ausente'
       WHEN decision IS NULL THEN 'Pendente: serviço não mapeado'
-      WHEN cents IS NULL OR active<>1 THEN 'Pendente: preço ausente ou serviço inativo'
-      ELSE 'Faturável' END reason FROM chosen v LEFT JOIN priced p ON p.code=v.code)
+      WHEN p.cents IS NULL OR active<>1 THEN 'Pendente: preço ausente ou serviço inativo'
+      ELSE 'Faturável' END reason FROM chosen v LEFT JOIN priced p ON p.code=v.code LEFT JOIN overrides o ON o.tss=v.tss)
     SELECT * FROM resolved'''
     return sql,{'month':month,'first':first,'last':last}
 
@@ -172,7 +175,11 @@ def preview(root,month,connection=None):
     if connection is None:
         with connect(root) as c:return preview(root,month,c)
     c=connection;sql,args=classified_sql(month)
-    groups=[dict(r) for r in c.execute('SELECT reason,code,COUNT(*) quantity,COALESCE(SUM(CASE WHEN reason=\'Faturável\' THEN cents ELSE 0 END),0) cents FROM ('+sql+') GROUP BY reason,code',args)]
+    unit_groups=[dict(r) for r in c.execute("SELECT reason,code,cents unit_cents,COUNT(*) quantity,COALESCE(SUM(CASE WHEN reason='Faturável' THEN cents ELSE 0 END),0) cents FROM ("+sql+") GROUP BY reason,code,cents",args)]
+    combined={}
+    for r in unit_groups:
+        key=(r['reason'],r['code']);g=combined.setdefault(key,{'reason':r['reason'],'code':r['code'],'quantity':0,'cents':0});g['quantity']+=r['quantity'];g['cents']+=r['cents']
+    groups=list(combined.values())
     # Todas as linhas sem data ficam pendentes globais: não atribuir mês por suposição.
     undated=c.execute('SELECT COUNT(*) FROM commercial WHERE day IS NULL AND closed=1').fetchone()[0]
     pending=sum(r['quantity'] for r in groups if r['reason'].startswith('Pendente:'))+undated
@@ -182,8 +189,9 @@ def preview(root,month,connection=None):
     if visits.exists():
         with closing(sqlite3.connect(visits.resolve().as_uri()+'?mode=ro',uri=True)) as op:actual_last=op.execute('SELECT COALESCE(MAX(id),0) FROM visits').fetchone()[0]
     ready=projection_last==actual_last and pending==0
-    byservice=[{'code':code,'name':p['name'],'quantity':sum(r['quantity'] for r in groups if r['reason']=='Faturável' and r['code']==code),'cents':sum(r['cents'] for r in groups if r['reason']=='Faturável' and r['code']==code),'unit_cents':p['cents']} for code,p in services.items() if code!='geo']
-    result={'month':month,'groups':groups,'services':byservice,'pending':pending,'undated':undated,'ready':ready,'sync_pending':actual_last-projection_last,'geo':geo,'inspection_cents':sum(r['cents'] for r in groups),'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]}
+    rates=[{k:r[k] for k in ('code','unit_cents','quantity')} for r in unit_groups if r['reason']=='Faturável']
+    byservice=[{'code':code,'name':p['name'],'quantity':sum(r['quantity'] for r in groups if r['reason']=='Faturável' and r['code']==code),'cents':sum(r['cents'] for r in groups if r['reason']=='Faturável' and r['code']==code),'unit_cents':next((r['unit_cents'] for r in rates if r['code']==code),p['cents']) if len([r for r in rates if r['code']==code])<=1 else None} for code,p in services.items() if code!='geo']
+    result={'month':month,'groups':groups,'services':byservice,'rates':rates,'pending':pending,'undated':undated,'ready':ready,'sync_pending':actual_last-projection_last,'geo':geo,'inspection_cents':sum(r['cents'] for r in groups),'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]}
     result['fingerprint']=digest(result);return result
 
 def service_list_connection(c,month):
@@ -240,4 +248,94 @@ def export_catalog(root,month):
     with connect(root) as c:
         rules=[dict(r) for r in c.execute('SELECT * FROM rules r WHERE effective=(SELECT MAX(effective) FROM rules x WHERE x.tss=r.tss AND x.cause=r.cause AND x.form=r.form AND effective<=?) AND r.effective<=?',(month,month))]
         reviews={r['raw_hash']:{'decision':r['decision'],'code':r['code']} for r in c.execute('SELECT v.raw_hash,r.decision,r.code FROM reviews r JOIN commercial v ON v.id=r.visit_id WHERE r.month=?',(month,))}
-        return {'month':month,'prices':service_list_connection(c,month),'rules':rules,'reviews':reviews,'scope':'Catálogo e decisões exportados para '+month}
+        overrides={}
+        for r in c.execute("SELECT value FROM metadata WHERE key LIKE 'tss_price:%'"):
+            o=json.loads(r[0])
+            if o['effective']<=month and (o['tss'] not in overrides or o['effective']>overrides[o['tss']]['effective']):overrides[o['tss']]=o
+        return {'month':month,'prices':service_list_connection(c,month),'rules':rules,'reviews':reviews,'tss_prices':overrides,'scope':'Catálogo e decisões exportados para '+month}
+
+
+def catalog_state(root):
+    """Catálogo pequeno; não lê registros individuais para preencher o formulário."""
+    with connect(root) as c:
+        rules=[dict(r) for r in c.execute('SELECT * FROM rules ORDER BY effective,id')]
+        custom=[json.loads(r[0]) for r in c.execute("SELECT value FROM metadata WHERE key LIKE 'tss_price:%'")]
+        return {'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0],'rules':rules,'tss_prices':custom}
+
+
+def _write_change(c,change):
+    """Aplicação comum à simulação e à confirmação; sem commits intermediários."""
+    kind=change.get('kind');effective=change.get('effective','');future(c,effective)
+    evidence=change.get('evidence','').strip()
+    if not evidence:raise ValueError('Documento/justificativa obrigatório.')
+    if kind=='service':
+        code=change.get('code','').strip();name=change.get('name','').strip();cents=change.get('cents')
+        if not code or not name or type(cents)!=int or cents<0:raise ValueError('Código confirmado, descrição e preço válidos obrigatórios.')
+        old=c.execute('SELECT name FROM services WHERE code=?',(code,)).fetchone()
+        if old and old[0]!=name:raise ValueError('Preserve a descrição do código existente.')
+        before=c.execute('SELECT * FROM prices WHERE code=? AND effective=?',(code,effective)).fetchone()
+        c.execute('INSERT OR IGNORE INTO services VALUES(?,?)',(code,name))
+        c.execute('INSERT OR REPLACE INTO prices VALUES(?,?,?,?)',(code,effective,cents,int(change.get('active',True))))
+        return {'price':dict(before) if before else None}
+    if kind!='rule':raise ValueError('Tipo de alteração inválido.')
+    tss=norm(change.get('tss'));cause=norm(change.get('cause'));form=norm(change.get('form'));decision=change.get('decision');code=change.get('code')
+    if not tss or decision not in ('Cobrar','Excluir','Pendente'):raise ValueError('TSS e situação válidos obrigatórios.')
+    if decision=='Cobrar' and (code=='geo' or not c.execute('SELECT 1 FROM services WHERE code=?',(code,)).fetchone()):raise ValueError('Categoria contratual inválida.')
+    amount=change.get('unit_cents')
+    if amount is not None and (type(amount)!=int or amount<0):raise ValueError('Preço específico deve ser inteiro não negativo em centavos.')
+    if amount is not None and (cause or form):raise ValueError('Preço por TSS abrange a descrição inteira. Para diferenciar causas, utilize outro serviço contratual.')
+    before=c.execute('SELECT * FROM rules WHERE tss=? AND cause=? AND form=? AND effective=?',(tss,cause,form,effective)).fetchone()
+    key='tss_price:'+digest(tss)+':'+effective
+    previous=c.execute('SELECT value FROM metadata WHERE key=?',(key,)).fetchone()
+    c.execute('INSERT OR REPLACE INTO rules(tss,cause,form,effective,code,decision,evidence) VALUES(?,?,?,?,?,?,?)',(tss,cause,form,effective,code if decision=='Cobrar' else None,decision,evidence))
+    if not cause and not form:
+        # JSON null encerra um preço específico anterior e volta a seguir o preço da categoria.
+        c.execute('INSERT OR REPLACE INTO metadata VALUES(?,?)',(key,json.dumps({'tss':tss,'effective':effective,'cents':amount},ensure_ascii=False)))
+    return {'rule':dict(before) if before else None,'tss_price':json.loads(previous[0]) if previous else None}
+
+
+def _source_stamp(root):
+    source=Path(root).resolve()/'vistorias.sqlite3'
+    if not source.exists():return [0,0]
+    with closing(sqlite3.connect(source.as_uri()+'?mode=ro',uri=True)) as c:
+        # Imports são append-only; não varrer visits para validar o formulário.
+        return list(c.execute('SELECT COUNT(*),COALESCE(MAX(id),0) FROM imports').fetchone())
+
+
+def _impact(c,root,change):
+    month_bounds(change.get('effective',''));future(c,change['effective'])
+    months={change['effective']}
+    months.update(r[0] for r in c.execute('SELECT DISTINCT substr(day,1,7) FROM commercial WHERE day>=?',(change['effective']+'-01',)))
+    months.update(r[0] for r in c.execute('SELECT month FROM geo WHERE month>=?',(change['effective'],)))
+    def totals(month):
+        p=preview(root,month,c)
+        return {'inspection_cents':p['inspection_cents'],'geo_cents':p['geo']['cents'],'pending':p['pending'],'services':p['services'],'rates':p['rates']}
+    before={m:totals(m) for m in sorted(months)}
+    c.execute('SAVEPOINT proposed_catalog')
+    try:
+        _write_change(c,change);after={m:totals(m) for m in sorted(months)}
+    finally:c.execute('ROLLBACK TO proposed_catalog');c.execute('RELEASE proposed_catalog')
+    return [{'month':m,'before':before[m],'after':after[m],'delta_cents':after[m]['inspection_cents']+after[m]['geo_cents']-before[m]['inspection_cents']-before[m]['geo_cents']} for m in sorted(months)]
+
+
+def prepare_change(root,change):
+    """Simulação exata em savepoint. Não aprova mês nem persiste regra/preço."""
+    with connect(root) as c:
+        c.execute('BEGIN IMMEDIATE')
+        try:
+            result={'root':str(Path(root).resolve()),'change':change,'revision':c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0],'source':_source_stamp(root),'impact':_impact(c,root,change)}
+            result['token']=digest(result);return result
+        finally:c.rollback()
+
+
+def confirm_change(root,plan,confirmed=False):
+    if not confirmed:raise ValueError('Confirmação explícita do impacto obrigatória.')
+    if plan.get('root')!=str(Path(root).resolve()) or plan.get('token')!=digest({k:v for k,v in plan.items() if k!='token'}):raise ValueError('Prévia inválida; gere novamente.')
+    with connect(root) as c:
+        c.execute('BEGIN IMMEDIATE')
+        if c.execute('SELECT value FROM revision WHERE id=1').fetchone()[0]!=plan['revision'] or _source_stamp(root)!=plan['source']:raise ValueError('Dados alterados; gere uma nova prévia de impacto.')
+        actual=_impact(c,root,plan['change'])
+        if actual!=plan['impact']:raise ValueError('Impacto mudou; confira novamente antes de confirmar.')
+        before=_write_change(c,plan['change'])
+        audit(c,'Alteração de catálogo confirmada',{'change':plan['change'],'before':before,'impact':actual,'token':plan['token']})
+    return actual

@@ -57,11 +57,13 @@ def run(files,month,output,catalog=None,references=None,progress=print):
                 elif not review and r['repeated']:reason='Pendente: OS repetida'
                 elif not review and r['tss']=='VISTORIA LIGACAO INATIVA SEM DEBITO':reason='Pendente: ligação inativa'
                 elif not review and len(candidates)>1:reason='Pendente: regras ambíguas'
+                elif rule and rule['decision']=='Pendente':reason='Pendente: classificação definida pelo usuário'
                 elif not r['os']:reason='Pendente: OS ausente'
                 elif not rule:reason='Pendente: serviço não mapeado'
                 elif code not in config['prices'] or not config['prices'][code]['active']:reason='Pendente: preço ausente ou serviço inativo'
                 else:reason='Faturável'
-                cents=config['prices'][code]['cents'] if reason=='Faturável' else 0
+                override=config.get('tss_prices',{}).get(r['tss'],{}).get('cents')
+                cents=(override if override is not None else config['prices'][code]['cents']) if reason=='Faturável' else 0
                 if reason=='Faturável':quantities[code]+=1;amounts[code]+=cents
                 reasons[reason]+=1;tsstotals[(r['tss'],code,reason)]+=1
                 if linecount and linecount%1048575==0:sheet=w.create_sheet('Registros '+str(linecount//1048575+1));sheet.append(['Arquivo','Aba','Linha','OS','Execução','Município','TSS','Código','Motivo','Valor centavos'])
