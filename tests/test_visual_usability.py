@@ -32,7 +32,26 @@ class VisualUsability(unittest.TestCase):
     navigate(a,'Produtividade de Vistorias');self.assertFalse(a.exception)
    frame=a.dataframe[0].value
    self.assertEqual(frame['Vistorias faturáveis'].sum(),sum(r['billed_count'] for r in p['municipalities']))
-   self.assertEqual(frame['Registros operacionais'].sum(),sum(r['operational_count'] for r in p['municipalities']))
-   self.assertEqual(frame['Faturamento de vistorias'].tolist(),[ui.money(r['cents']) for r in p['municipalities']])
+   self.assertEqual(frame['Vistorias realizadas'].sum(),sum(r['operational_count'] for r in p['municipalities']))
+   self.assertEqual(dict(zip(frame['Município'],frame['Faturamento (R$)'])),{r['municipality'] or 'Não informado':ui.money(r['cents']) for r in p['municipalities']})
    self.assertEqual(self.bank_hashes(),hashes)
 
+ def test_productivity_ordering_changes_only_presentation(self):
+  self.load()
+  with self.app() as a:
+   navigate(a,'Produtividade de Vistorias');hashes=self.bank_hashes()
+   rows=[{'municipality':'ZETA','operational_count':3,'billed_count':2,'cents':123456,'pending':1},
+         {'municipality':'ALFA','operational_count':10,'billed_count':9,'cents':2250,'pending':0},
+         {'municipality':'BETA','operational_count':1,'billed_count':0,'cents':0,'pending':1}]
+   preview={'municipalities':rows,'sync_pending':False,'approved':False,'undated':0}
+   with patch.object(ui,'cached_preview',return_value=preview),patch.object(ui.api,'financial',side_effect=AssertionError('Recalculo')),patch.object(ui.api,'municipal_summary',side_effect=AssertionError('Consulta adicional')):
+    for order,expected in [('Maior quantidade primeiro',['ALFA','ZETA','BETA']),('Menor quantidade primeiro',['BETA','ZETA','ALFA']),('Ordem alfabética dos municípios',['ALFA','BETA','ZETA'])]:
+     a.selectbox(key='inspection_productivity_order').set_value(order).run();self.assertFalse(a.exception)
+     frame=a.dataframe[0].value
+     self.assertEqual(frame.columns.tolist(),['Município','Vistorias realizadas','Vistorias faturáveis','Faturamento (R$)','Pendências'])
+     self.assertEqual(frame['Município'].tolist(),expected)
+     self.assertEqual(frame['Vistorias realizadas'].sum(),14)
+     self.assertEqual(frame['Vistorias faturáveis'].sum(),11)
+     self.assertEqual(frame.loc[frame['Município']=='ZETA','Faturamento (R$)'].iloc[0],'R$ 1.234,56')
+   self.assertEqual(self.bank_hashes(),hashes)
+   self.assertEqual(rows[0]['municipality'],'ZETA')

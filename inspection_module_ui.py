@@ -58,14 +58,20 @@ def render(data,month,page):
     if page=='Produtividade de Vistorias':
         rows=p['municipalities'] if 'municipalities' in p else cached_municipal(root,month,revision)
         frame=pd.DataFrame([{'Município':r['municipality'] or 'Não informado',
-            'Registros operacionais':r['operational_count'],'Vistorias faturáveis':r['billed_count'],
-            'Faturamento de vistorias':money(r['cents']),'Pendências':r['pending']} for r in rows])
+            'Vistorias realizadas':r['operational_count'],'Vistorias faturáveis':r['billed_count'],
+            'Faturamento (R$)':money(r['cents']),'Pendências':r['pending']} for r in rows])
         st.caption('Totais contratuais existentes por município, sem geolocalização. O arquivo não informa o executor individual.')
         if p['approved']:st.info('Competência aprovada: totais da fotografia mensal preservados.')
         if p['undated']:st.warning(f"{p['undated']} registros sem data de execução permanecem sem competência presumida.")
         if frame.empty:st.info('Sem registros para esta competência.')
         else:
             st.bar_chart(frame.set_index('Município')[['Vistorias faturáveis']],color='#1768a7')
+            st.subheader('Produção e faturamento contratual por município')
+            order=st.selectbox('Classificar por',['Maior quantidade primeiro','Menor quantidade primeiro','Ordem alfabética dos municípios'],key='inspection_productivity_order')
+            if order=='Ordem alfabética dos municípios':
+                frame=frame.sort_values('Município',kind='stable')
+            else:
+                frame=frame.sort_values(['Vistorias realizadas','Município'],ascending=[order=='Menor quantidade primeiro',True],kind='stable')
             st.dataframe(frame,hide_index=True,width='stretch')
         return
     cols=st.columns(3);cols[0].metric('Vistorias · valor aprovado' if p['approved'] else 'Vistorias · prévia',money(p['inspection_cents']));cols[1].metric('Pendências comerciais',p['pending']);cols[2].metric('Geolocalização',money(p['geo']['cents']))
