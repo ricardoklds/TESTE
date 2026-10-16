@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 """Testa filtros contra uma cópia da base real, sem modificar dados de produção.
 
 Requer data/ com a planilha de um grupo já importada. Em instalação sem dados,
@@ -43,7 +44,7 @@ class InterfaceTests(unittest.TestCase):
 
     def app(self,page):
         at=AppTest.from_file(str(ROOT/'app.py'),default_timeout=90).run()
-        at.sidebar.radio[0].set_value(page).run()
+        navigate(at,page)
         self.assertFalse(at.exception)
         return at
 
@@ -91,7 +92,7 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(at.date_input(key='period_day_2026-11').value,date(2026,11,1))
         self.assertEqual(at.metric[0].value,'R$ 0,00')
         at.sidebar.date_input[0].set_value(date(2026,10,1)).run()
-        at.sidebar.radio[0].set_value('Relatórios').run()
+        navigate(at,'Relatórios')
         self.assertEqual(at.metric[0].value,'R$ 30.454,12')
         self.assertFalse(at.exception)
 

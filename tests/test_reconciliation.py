@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 from contextlib import closing
 from datetime import date
 from pathlib import Path
@@ -65,7 +66,7 @@ class ReconciliationTests(unittest.TestCase):
         for page in ('Painel inicial','Fechamento mensal','Produtividade'):
             at=AppTest.from_file(str(root/'app.py'),default_timeout=60).run()
             at.sidebar.date_input[0].set_value(date(2026,9,1)).run()
-            at.sidebar.radio[0].set_value(page).run()
+            navigate(at,page)
             at.radio(key='period_mode').set_value('Mês completo').run()
             self.assertFalse(at.exception)
             self.assertEqual(at.metric[0].value,'R$ 6,81')
@@ -73,5 +74,5 @@ class ReconciliationTests(unittest.TestCase):
             at.date_input(key='period_day_2026-09').set_value(date(2026,9,7)).run()
             self.assertFalse(at.exception)
             self.assertEqual(at.metric[0].value,'R$ 3,93')
-            at.sidebar.radio[0].set_value('Relatórios').run()
+            navigate(at,'Relatórios')
             self.assertEqual(at.metric[0].value,'R$ 6,81')

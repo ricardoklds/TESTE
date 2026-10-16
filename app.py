@@ -9,6 +9,8 @@ st.markdown('''<style>
 [data-testid="stSidebar"]{background:#163a60} [data-testid="stSidebar"] *{color:#f7fafc}
 [data-testid="stMetric"]{background:white;border:1px solid #dce5ee;border-radius:12px;padding:18px}
 .stButton button{border-radius:8px} [data-testid="stSidebar"] input{color:#163a60}
+[data-testid="stSidebar"] button[kind="secondary"]{background:#214b75;border-color:#52708f;color:#f7fafc}
+[data-testid="stSidebar"] button[kind="primary"]{background:#1768a7;border-color:#73a8d0;color:#fff}
 </style>''',unsafe_allow_html=True)
 
 @st.cache_data(show_spinner=False,max_entries=8)
@@ -31,6 +33,11 @@ data_path=Path(os.environ.get('APP_DATA_DIR',str(Path(__file__).parent/'data')))
 if module=='Configurações' and page=='Municípios do Contrato':
     import inspection_settings_ui
     inspection_settings_ui.render(data_path,month)
+    st.stop()
+if module=='Configurações' and page in ('Serviços e Preços de Vistorias','Regras comerciais de Vistorias'):
+    import inspection_module_ui
+    st.title(page)
+    inspection_module_ui.catalog(str(data_path/'vistorias'),month,rules_only=page=='Regras comerciais de Vistorias')
     st.stop()
 if module=='Vistorias':
     import inspection_module_ui

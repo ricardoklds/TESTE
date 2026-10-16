@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 import json
 from pathlib import Path
 import sqlite3
@@ -88,7 +89,7 @@ class PerformanceQueries(unittest.TestCase):
         with patch.object(storage,'records',side_effect=AssertionError('Leitura completa proibida na navegação')):
             at=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=60).run()
             for page in ('Painel inicial','Importar planilhas','Fechamento mensal','Produtividade','Relatórios'):
-                at.sidebar.radio[0].set_value(page).run()
+                navigate(at,page)
                 self.assertFalse(at.exception,page)
 
     def test_background_export_allows_navigation(self):
@@ -99,11 +100,11 @@ class PerformanceQueries(unittest.TestCase):
             started.set();gate.wait(10)
         with patch.object(fast_reports,'detailed_excel',side_effect=worker):
             at=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=60).run()
-            at.sidebar.radio[0].set_value('Relatórios').run()
+            navigate(at,'Relatórios')
             next(b for b in at.button if b.label=='Gerar Excel completo em segundo plano').click().run()
             try:
                 self.assertTrue(started.wait(2));self.assertFalse(at.exception)
-                at.sidebar.radio[0].set_value('Painel inicial').run()
+                navigate(at,'Painel inicial')
                 self.assertFalse(at.exception)
                 self.assertFalse(gate.is_set())
             finally:gate.set()

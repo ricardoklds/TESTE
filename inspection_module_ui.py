@@ -23,6 +23,11 @@ def cents(text):
     return int(d*100)
 def money(c):return f'R$ {c/100:,.2f}'.replace(',','_').replace('.',',').replace('_','.')
 
+def service_frame(rows):
+    if not any('quantity' in r for r in rows):
+        return pd.DataFrame([{'Código':r['code'],'Serviço':r['name'],'Valor unitário':money(r['cents']),'Vigência':r.get('effective','—'),'Situação':'Ativo' if r.get('active',1) else 'Inativo'} for r in rows])
+    return pd.DataFrame([{'Código':r['code'],'Serviço':r['name'],'Quantidade':r['quantity'],'Valor unitário':money(r['unit_cents']) if r.get('unit_cents') is not None else 'Valores variados','Valor total':money(r['cents'])} for r in rows])
+
 def render(data,month,page):
     root=str(Path(data)/'vistorias')
     if page=='Prazos e Meta Contratual':
@@ -145,68 +150,71 @@ def import_panel(root):
 @st.cache_data(show_spinner=False,max_entries=16)
 def cached_catalog(root,revision):return api.catalog_state(root)
 
-def catalog(root,month):
-    services=api.service_list(root,month);st.dataframe(pd.DataFrame(services),hide_index=True)
+def catalog(root,month,rules_only=False):
+    services=api.service_list(root,month)
     state=cached_catalog(root,api.revision(root))
-    st.caption('Preços de categoria e preços específicos por TSS são distintos. Alterar o preço da categoria afeta todas as descrições que a seguem; preço específico afeta somente o TSS. Não altera Leituras.')
-    st.info('Correção confirmada: VERIFICAR SERVIÇO EXECUTADO pertence a Predial (200014106, R$ 22,50). Em instalações anteriores, selecione esse TSS, escolha Predial com vigência 2026-09, confira o impacto e confirme. Meses aprovados permanecem bloqueados.')
-    selected=st.selectbox('Serviço',['Novo serviço']+[s['code'] for s in services])
-    old=next((s for s in services if s['code']==selected),None)
-    with st.form('price_service'):
-        code=st.text_input('Código contratual confirmado',value=old['code'] if old else '')
-        name=st.text_input('Descrição contratual',value=old['name'] if old else '')
-        price=st.text_input('Preço unitário em reais',value=f"{old['cents']/100:.2f}".replace('.',',') if old else '')
-        effective=st.text_input('Vigência (AAAA-MM)',value=month)
-        active=st.checkbox('Serviço ativo',value=bool(old['active']) if old else True)
-        evidence=st.text_input('Documento/justificativa do preço')
-        if st.form_submit_button('Calcular impacto do serviço/preço'):
-            try:
-                change={'kind':'service','code':code,'name':name,'effective':effective,'cents':cents(price),'active':active,'evidence':evidence}
-                with st.spinner('Simulando em transação reversível…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
-            except (ValueError,InvalidOperation) as e:st.error(str(e))
-    st.subheader('Classificação das descrições originais')
-    options=sorted({r['tss'] for r in state['rules']})
-    choice=st.selectbox('Descrição TSS para editar',['Nova descrição']+options)
-    candidates=[r for r in state['rules'] if r['tss']==choice and r['effective']<=month and not r['cause'] and not r['form']]
-    current=max(candidates,key=lambda r:(r['effective'],r['id'])) if candidates else None
-    codes=[s['code'] for s in services if s['code']!='geo'];names={s['code']:s['name'] for s in services}
-    situation={'Cobrar':'Faturável','Excluir':'Não faturável','Pendente':'Pendente'}
-    with st.form('map_service'):
-        tss=st.text_input('TSS original',value='' if choice=='Nova descrição' else choice)
-        cause=st.text_input('Causa Resultado (opcional)');form=st.text_input('Formulário de Baixa (opcional)')
-        decision=st.selectbox('Situação comercial',list(situation),index=list(situation).index(current['decision']) if current else 2,format_func=lambda v:situation[v])
-        code=st.selectbox('Categoria para cobrança',codes,index=codes.index(current['code']) if current and current['code'] in codes else 0,format_func=lambda k:names[k]+' · '+k)
-        custom=[o for o in state['tss_prices'] if o['tss']==choice and o['effective']<=month]
-        rate=max(custom,key=lambda o:o['effective'])['cents'] if custom else None
-        unit=st.text_input('Preço específico deste TSS (R$; vazio segue a categoria)',value=f'{rate/100:.2f}'.replace('.',',') if rate is not None else '')
-        st.caption('Ex.: categoria Predial e preço específico 12,00 altera só esta descrição. Deixar vazio volta a seguir a tarifa da categoria. Preços específicos abrangem o TSS inteiro, não apenas a causa/formulário.')
-        effective=st.text_input('Competência inicial da classificação',value=month);evidence=st.text_input('Documento/justificativa da classificação')
-        if st.form_submit_button('Calcular impacto da classificação'):
-            try:
-                change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None,'evidence':evidence}
-                with st.spinner('Calculando impacto das competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
-            except (ValueError,InvalidOperation) as e:st.error(str(e))
-    import inspection_contract
-    policy=inspection_contract.from_root(root,month)
-    st.subheader('Critério de faturamento por categoria')
-    st.caption('Aprovação: uma cobrança por OS, representada pela última execução elegível. Empates pelo menor ID original. Outras categorias continuam em conferência manual de repetições até mudança explícita.')
-    mode_code=st.selectbox('Categoria do critério',[s['code'] for s in services if s['code']!='geo'])
-    with st.form('billing_mode'):
-        mode=st.selectbox('Critério de cobrança',list(inspection_contract.LABELS),index=list(inspection_contract.LABELS).index(policy['modes'].get(mode_code,'manual')),format_func=lambda v:inspection_contract.LABELS[v])
-        effective=st.text_input('Vigência do critério',value=month)
-        evidence=st.text_input('Justificativa/documento do critério')
-        if st.form_submit_button('Calcular impacto do critério'):
-            try:
-                with st.spinner('Simulando critérios e competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,{'kind':'billing_mode','code':mode_code,'mode':mode,'effective':effective,'evidence':evidence})
-            except ValueError as e:st.error(str(e))
+    if not rules_only:
+        st.dataframe(service_frame(services),hide_index=True)
+        st.caption('Preços de categoria e preços específicos por TSS são distintos. Alterar o preço da categoria afeta todas as descrições que a seguem; preço específico afeta somente o TSS. Não altera Leituras.')
+        st.info('Correção confirmada: VERIFICAR SERVIÇO EXECUTADO pertence a Predial (200014106, R$ 22,50). Em instalações anteriores, selecione esse TSS, escolha Predial com vigência 2026-09, confira o impacto e confirme. Meses aprovados permanecem bloqueados.')
+        selected=st.selectbox('Serviço',['Novo serviço']+[s['code'] for s in services],format_func=lambda code:next((s['name']+' · '+code for s in services if s['code']==code),code))
+        old=next((s for s in services if s['code']==selected),None)
+        with st.form('price_service'):
+            code=st.text_input('Código contratual confirmado',value=old['code'] if old else '')
+            name=st.text_input('Descrição contratual',value=old['name'] if old else '')
+            price=st.text_input('Preço unitário em reais',value=f"{old['cents']/100:.2f}".replace('.',',') if old else '')
+            effective=st.text_input('Vigência (AAAA-MM)',value=month)
+            active=st.checkbox('Serviço ativo',value=bool(old['active']) if old else True)
+            evidence=st.text_input('Documento/justificativa do preço')
+            if st.form_submit_button('Calcular impacto do serviço/preço'):
+                try:
+                    change={'kind':'service','code':code,'name':name,'effective':effective,'cents':cents(price),'active':active,'evidence':evidence}
+                    with st.spinner('Simulando em transação reversível…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
+                except (ValueError,InvalidOperation) as e:st.error(str(e))
+        st.subheader('Classificação das descrições originais')
+        options=sorted({r['tss'] for r in state['rules']})
+        choice=st.selectbox('Descrição TSS para editar',['Nova descrição']+options)
+        candidates=[r for r in state['rules'] if r['tss']==choice and r['effective']<=month and not r['cause'] and not r['form']]
+        current=max(candidates,key=lambda r:(r['effective'],r['id'])) if candidates else None
+        codes=[s['code'] for s in services if s['code']!='geo'];names={s['code']:s['name'] for s in services}
+        situation={'Cobrar':'Faturável','Excluir':'Não faturável','Pendente':'Pendente'}
+        with st.form('map_service'):
+            tss=st.text_input('TSS original',value='' if choice=='Nova descrição' else choice)
+            cause=st.text_input('Causa Resultado (opcional)');form=st.text_input('Formulário de Baixa (opcional)')
+            decision=st.selectbox('Situação comercial',list(situation),index=list(situation).index(current['decision']) if current else 2,format_func=lambda v:situation[v])
+            code=st.selectbox('Categoria para cobrança',codes,index=codes.index(current['code']) if current and current['code'] in codes else 0,format_func=lambda k:names[k]+' · '+k)
+            custom=[o for o in state['tss_prices'] if o['tss']==choice and o['effective']<=month]
+            rate=max(custom,key=lambda o:o['effective'])['cents'] if custom else None
+            unit=st.text_input('Preço específico deste TSS (R$; vazio segue a categoria)',value=f'{rate/100:.2f}'.replace('.',',') if rate is not None else '')
+            st.caption('Ex.: categoria Predial e preço específico 12,00 altera só esta descrição. Deixar vazio volta a seguir a tarifa da categoria. Preços específicos abrangem o TSS inteiro, não apenas a causa/formulário.')
+            effective=st.text_input('Competência inicial da classificação',value=month);evidence=st.text_input('Documento/justificativa da classificação')
+            if st.form_submit_button('Calcular impacto da classificação'):
+                try:
+                    change={'kind':'rule','tss':tss,'cause':cause,'form':form,'effective':effective,'decision':decision,'code':code,'unit_cents':cents(unit) if unit.strip() else None,'evidence':evidence}
+                    with st.spinner('Calculando impacto das competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,change)
+                except (ValueError,InvalidOperation) as e:st.error(str(e))
+    if rules_only:
+        import inspection_contract
+        policy=inspection_contract.from_root(root,month)
+        st.subheader('Critério de faturamento por categoria')
+        st.caption('Aprovação: uma cobrança por OS, representada pela última execução elegível. Empates pelo menor ID original. Outras categorias continuam em conferência manual de repetições até mudança explícita.')
+        mode_code=st.selectbox('Categoria do critério',[s['code'] for s in services if s['code']!='geo'],format_func=lambda code:next(s['name'] for s in services if s['code']==code))
+        with st.form('billing_mode'):
+            mode=st.selectbox('Critério de cobrança',list(inspection_contract.LABELS),index=list(inspection_contract.LABELS).index(policy['modes'].get(mode_code,'manual')),format_func=lambda v:inspection_contract.LABELS[v])
+            effective=st.text_input('Vigência do critério',value=month)
+            evidence=st.text_input('Justificativa/documento do critério')
+            if st.form_submit_button('Calcular impacto do critério'):
+                try:
+                    with st.spinner('Simulando critérios e competências abertas…'):st.session_state['catalog_plan']=api.prepare_change(root,{'kind':'billing_mode','code':mode_code,'mode':mode,'effective':effective,'evidence':evidence})
+                except ValueError as e:st.error(str(e))
     plan=st.session_state.get('catalog_plan')
-    if plan and plan['root']==str(Path(root).resolve()):
+    if plan and plan['root']==str(Path(root).resolve()) and (plan['change']['kind']=='billing_mode')==rules_only:
         st.subheader('Prévia de impacto — nada foi salvo')
         st.write(plan['change'])
-        st.dataframe(pd.DataFrame([{'Competência':r['month'],'Vistorias antes':money(r['before']['inspection_cents']),'Vistorias depois':money(r['after']['inspection_cents']),'Geolocalização antes':money(r['before']['geo_cents']),'Geolocalização depois':money(r['after']['geo_cents']),'Diferença em centavos':r['delta_cents'],'Pendências antes':r['before']['pending'],'Pendências depois':r['after']['pending']} for r in plan['impact']]),hide_index=True)
+        st.dataframe(pd.DataFrame([{'Competência':r['month'],'Vistorias antes':money(r['before']['inspection_cents']),'Vistorias depois':money(r['after']['inspection_cents']),'Geolocalização antes':money(r['before']['geo_cents']),'Geolocalização depois':money(r['after']['geo_cents']),'Variação':money(r['delta_cents']),'Pendências antes':r['before']['pending'],'Pendências depois':r['after']['pending']} for r in plan['impact']]),hide_index=True)
         with st.expander('Quantidades e valores por categoria antes/depois'):
             for r in plan['impact']:
-                st.write(r['month']);st.dataframe(pd.DataFrame(r['before']['services']),hide_index=True);st.dataframe(pd.DataFrame(r['after']['services']),hide_index=True)
+                st.write(r['month']);st.dataframe(service_frame(r['before']['services']),hide_index=True);st.dataframe(service_frame(r['after']['services']),hide_index=True)
         with st.form('confirm_catalog_change'):
             yes=st.checkbox('Conferi a vigência e o impacto acima e confirmo esta alteração do catálogo')
             submit=st.form_submit_button('Confirmar alteração após impacto')
@@ -219,32 +227,57 @@ def catalog(root,month):
     with api.connect(root) as c:
         rules=[dict(r) for r in c.execute('SELECT * FROM rules ORDER BY tss,effective DESC LIMIT 50 OFFSET ?',((page-1)*50,))]
         history=[dict(r) for r in c.execute('SELECT * FROM audit ORDER BY id DESC LIMIT 50 OFFSET ?',((history_page-1)*50,))]
-    st.dataframe(pd.DataFrame(rules),hide_index=True)
-    st.dataframe(pd.DataFrame(state['tss_prices']),hide_index=True)
-    with st.expander('Histórico de alterações (50 eventos por página)'):st.dataframe(pd.DataFrame(history),hide_index=True)
+    if not rules_only:
+        st.dataframe(pd.DataFrame(rules).rename(columns={'tss':'Descrição TSS','cause':'Causa','form':'Formulário','effective':'Vigência','code':'Código','decision':'Situação','evidence':'Justificativa'}),hide_index=True)
+        st.dataframe(pd.DataFrame([{'Descrição TSS':r['tss'],'Vigência':r['effective'],'Valor unitário':money(r['cents']) if r['cents'] is not None else 'Segue a categoria'} for r in state['tss_prices']]),hide_index=True)
+    with st.expander('Histórico de alterações (50 eventos por página)'):st.dataframe(pd.DataFrame(history).rename(columns={'id':'Registro','created':'Data e hora (UTC)','action':'Ação','payload':'Detalhes'}),hide_index=True)
 
 
 def geolocation(root,month):
+    import inspection_contract
     with api.connect(root) as c:
-        old=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
-        initial=json.loads(old['cities']) if old else {}
-    st.caption('O modo principal define a cobrança; o outro é só conferência. Informe total mensal já restrito aos municípios do contrato. Por município, cidades fora do escopo ficam preservadas, sem faturamento. Divergências impedem aprovação. Nenhuma quantidade é cadastrada automaticamente.')
-    with st.form('geolocation'):
-        mode=st.selectbox('Modo principal',['Total mensal','Por município'],index=0 if not old or old['mode']=='Total mensal' else 1)
-        total=st.text_input('Total Sabesp (opcional para conferência por município)',value=str(old['total']) if old and old['total'] is not None else '')
-        cities=st.text_area('Municípios: uma linha Município;quantidade',value='\n'.join(f'{k};{v}' for k,v in initial.items()))
-        evidence=st.text_input('Documento Sabesp e justificativa da inclusão/edição')
-        yes=st.checkbox('Confirmo as quantidades documentadas desta competência')
-        if st.form_submit_button('Salvar Geolocalização'):
-            try:
-                if not yes:raise ValueError('Confirmação obrigatória.')
-                parsed={}
-                for line in cities.splitlines():
-                    if not line.strip():continue
-                    town,qty=line.rsplit(';',1);town=town.strip()
-                    if town in parsed:raise ValueError('Município repetido.')
-                    parsed[town]=int(qty.strip())
-                api.save_geo(root,month,mode,int(total) if total.strip() else None,parsed,evidence);st.rerun()
-            except ValueError as e:st.error(str(e))
-    with api.connect(root) as c:result=api.geo_summary(c,month,api.service_list_connection(c,month))
-    st.write(result)
+        row=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
+        old=dict(row) if row else None
+        price=api.service_list_connection(c,month).get('geo')
+        policy=inspection_contract.policy(c,month)
+        approved=c.execute('SELECT 1 FROM approvals WHERE month=?',(month,)).fetchone() is not None
+    initial=json.loads(old['cities']) if old else {}
+    st.text_input('Competência',value=month,disabled=True)
+    with st.expander('Detalhar por município (opcional)',expanded=bool(old and old['mode']=='Por município')):
+        mode=st.radio('Forma de lançamento',['Total mensal','Por município'],index=1 if old and old['mode']=='Por município' else 0,key='geo_mode:'+root+month,disabled=approved)
+        cities_text=st.text_area('Municípios e quantidades (Município;quantidade)',value='\n'.join(f'{k};{v}' for k,v in initial.items()),key='geo_cities:'+root+month,disabled=approved or mode=='Total mensal')
+    parsed={};error=None
+    if mode=='Por município':
+        try:
+            for line in cities_text.splitlines():
+                if not line.strip():continue
+                if ';' not in line:raise ValueError('Use uma linha Município;quantidade.')
+                town,text=line.rsplit(';',1);town=town.strip()
+                try:value=int(text.strip())
+                except ValueError:raise ValueError('A quantidade deve ser um número inteiro não negativo.')
+                if not town or value<0:raise ValueError('Informe município e quantidade inteira não negativa.')
+                if api.norm(town) in {api.norm(k) for k in parsed}:raise ValueError('Município repetido.')
+                parsed[town]=value
+            if not parsed:raise ValueError('Informe pelo menos um município e sua quantidade.')
+        except ValueError as e:error=str(e)
+    initial_total=old['total'] if old and old['mode']=='Total mensal' else None
+    if mode=='Total mensal':
+        total=st.number_input('Quantidade',min_value=0,value=initial_total,step=1,placeholder='Informe a quantidade',key='geo_quantity:'+root+month,disabled=approved)
+    else:total=None
+    preview_total=(total if total is not None else 0) if mode=='Total mensal' else None
+    result=api.geo_values({'mode':mode,'total':preview_total,'cities':parsed},policy,price)
+    if mode=='Por município':st.metric('Quantidade contratual','—' if error else result['quantity'])
+    cols=st.columns(2);cols[0].metric('Preço unitário vigente',money(price['cents']) if price else 'Não cadastrado')
+    cols[1].metric('Valor total',money(result['cents']) if (mode=='Por município' and not error) or total is not None else '—')
+    if approved:st.info('Competência aprovada: lançamento e valores preservados.')
+    if error:st.error(error)
+    if result.get('out_of_scope_quantity'):st.info(f"{result['out_of_scope_quantity']} geolocalizações fora do contrato: preservadas, sem cobrança.")
+    if result.get('unknown_municipalities'):st.warning('Município não autorizado: lançamento permanece pendente para conferência, sem aprovação automática.')
+    if price and not price['active']:st.warning('Preço inativo: revise Serviços e Preços de Vistorias.')
+    if st.button('Salvar',disabled=approved or error is not None or (mode=='Total mensal' and total is None)):
+        try:
+            # Salvar substitui somente o lançamento do mês; audit guarda o anterior.
+            # Os dois modos nunca são somados.
+            api.save_geo(root,month,mode,total,parsed if mode=='Por município' else {})
+            st.success('Quantidade salva.');st.rerun()
+        except ValueError as e:st.error(str(e))

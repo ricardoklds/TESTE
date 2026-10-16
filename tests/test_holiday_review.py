@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 """Filtros de conferência em bancos sintéticos; nenhuma decisão financeira."""
 from datetime import date
 from contextlib import closing
@@ -122,7 +123,7 @@ class HolidayReviewTests(unittest.TestCase):
         self.add('1',city='Desconhecido');self.add('2')
         app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=60).run()
         app.sidebar.date_input[0].set_value(date(2026,9,1)).run()
-        app.sidebar.radio[0].set_value('Fechamento mensal').run()
+        navigate(app,'Fechamento mensal')
         self.assertFalse(app.exception)
         situation=next(s for s in app.selectbox if s.label=='Situação')
         self.assertEqual(tuple(situation.options),holiday_review.SITUATIONS)

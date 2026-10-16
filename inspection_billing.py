@@ -129,8 +129,9 @@ def review(root,visit_id,month,decision,code,evidence):
         c.execute('INSERT OR REPLACE INTO reviews VALUES(?,?,?,?,?)',(visit_id,month,decision,code if decision=='Cobrar' else None,evidence))
         audit(c,'Conferência individual',{'id':visit_id,'month':month,'decision':decision,'code':code,'evidence':evidence,'before':dict(before) if before else None})
 
-def save_geo(root,month,mode,total,cities,evidence):
-    if mode not in ('Total mensal','Por município') or not evidence.strip():raise ValueError('Modo e documento obrigatórios.')
+def save_geo(root,month,mode,total,cities,evidence=None):
+    if mode not in ('Total mensal','Por município'):raise ValueError('Modo de lançamento inválido.')
+    evidence=(evidence or '').strip() or 'Lançamento manual pela interface; documento não exigido.'
     if total is not None and (type(total)!=int or total<0):raise ValueError('Quantidade total inválida.')
     if any(not k.strip() or type(v)!=int or v<0 for k,v in cities.items()):raise ValueError('Município e quantidades inteiras não negativas obrigatórios.')
     names=[norm(k) for k in cities]
@@ -145,13 +146,17 @@ def save_geo(root,month,mode,total,cities,evidence):
 def geo_summary(c,month,prices):
     r=c.execute('SELECT * FROM geo WHERE month=?',(month,)).fetchone()
     if not r:return {'quantity':0,'cents':0,'ready':False,'reason':'Geolocalização não confirmada (zero deve ser informado explicitamente).'}
-    cities=json.loads(r['cities']);policy=contract_policy.policy(c,month)
+    return geo_values(r,contract_policy.policy(c,month),prices.get('geo'))
+
+def geo_values(r,policy,price):
+    """Prévia em memória; o mesmo critério do lançamento salvo, sem gravar."""
+    cities=r['cities'] if isinstance(r['cities'],dict) else json.loads(r['cities'])
     inside={k:v for k,v in cities.items() if contract_policy.classify(k,policy)=='Dentro do escopo'}
     unknown={k:v for k,v in cities.items() if contract_policy.classify(k,policy).startswith('Pendente') and v}
     outside=sum(v for k,v in cities.items() if contract_policy.classify(k,policy)=='Fora do escopo do contrato')
     quantity=r['total'] if r['mode']=='Total mensal' else sum(inside.values())
     matches=r['total'] is None or not cities or r['total']==sum(inside.values())
-    price=prices.get('geo');ready=matches and not unknown and price is not None and bool(price['active'])
+    ready=matches and not unknown and price is not None and bool(price['active'])
     return {'quantity':quantity,'unit_cents':price['cents'] if price else None,'cents':quantity*price['cents'] if price else 0,'ready':ready,'mode':r['mode'],'cities_total':sum(inside.values()) if cities else None,'reference_total':r['total'],'out_of_scope_quantity':outside,'unknown_municipalities':unknown,'reason':'' if ready else 'Total e municípios contratuais divergem, município pendente ou preço inativo/ausente.'}
 
 # Todas as classificações em SQL; registros brutos são lidos só na projeção/importação e exportação solicitada.

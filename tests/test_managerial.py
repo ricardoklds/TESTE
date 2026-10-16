@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 from contextlib import closing
 from io import BytesIO
 from pathlib import Path
@@ -115,7 +116,7 @@ class ManagementTests(unittest.TestCase):
         baseline=self.get(p)
         self.assertFalse(at.exception)
         self.assertEqual(at.metric[0].value,__import__('exports').money(baseline['total_cents']))
-        at.sidebar.radio[0].set_value('Relatórios').run()
+        navigate(at,'Relatórios')
         at.button(key='manager_clear').click().run()
         at.multiselect(key='manager_employee_2026-09').set_value(['Alice']).run()
         self.assertFalse(at.exception)
@@ -123,7 +124,7 @@ class ManagementTests(unittest.TestCase):
         self.assertEqual(next(m.value for m in at.metric if m.label=='Faturamento mensal'),__import__('exports').money(baseline['total_cents']))
         at.button(key='manager_excel').click().run()
         self.assertFalse(at.exception)
-        at.sidebar.radio[0].set_value('Painel inicial').run()
+        navigate(at,'Painel inicial')
         at.multiselect(key='manager_employee_2026-09').set_value(['Bob']).run()
         at.multiselect(key='manager_group_2026-09').set_value(['02']).run()
         at.multiselect(key='manager_city_2026-09').set_value(['ATC AGUDOS']).run()
@@ -135,6 +136,6 @@ class ManagementTests(unittest.TestCase):
         self.assertEqual(at.multiselect(key='manager_group_2026-09').value,['02'])
         self.assertEqual(at.metric[0].value,'R$ 0,00')
         at.radio(key='period_mode').set_value('Mês completo').run()
-        at.sidebar.radio[0].set_value('Fechamento mensal').run()
+        navigate(at,'Fechamento mensal')
         self.assertFalse(at.exception)
         self.assertEqual(at.metric[0].value,__import__('exports').money(baseline['total_cents']))

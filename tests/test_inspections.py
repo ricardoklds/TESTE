@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 import unittest,tempfile,sys
 from pathlib import Path
 from io import BytesIO
@@ -46,8 +47,8 @@ class Inspections(unittest.TestCase):
    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run()
    app.sidebar.date_input[0].set_value(date(2026,9,1))
    with patch.object(api,'export',side_effect=AssertionError('Exportação automática indevida')):
-    app.sidebar.selectbox[0].set_value('Vistorias').run()
-    app.sidebar.radio[0].set_value('Prazos e Meta Contratual').run()
+    navigate(app,module='Vistorias')
+    navigate(app,'Prazos e Meta Contratual')
     self.assertFalse(app.exception)
     self.assertTrue(any(m.value=='99%' for m in app.metric))
     self.assertFalse(any(b.label=='Aplicar multa' for b in app.button))

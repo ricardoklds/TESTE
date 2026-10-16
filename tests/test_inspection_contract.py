@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 import hashlib,json,os,sqlite3,tempfile,unittest
 from pathlib import Path
 from io import BytesIO
@@ -92,7 +93,7 @@ class ContractRules(unittest.TestCase):
   import storage
   self.load()
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
-   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.selectbox[0].set_value('Configurações').run();a.sidebar.radio[0].set_value('Municípios do Contrato').run();self.assertFalse(a.exception)
+   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();navigate(a,module='Configurações');navigate(a,'Municípios do Contrato');self.assertFalse(a.exception)
    next(t for t in a.text_input if t.label=='Início de vigência (AAAA-MM)').set_value('2026-10');next(t for t in a.text_input if t.label=='Documento e justificativa do escopo').set_value('Documento teste')
    next(t for t in a.button if t.label=='Calcular impacto do escopo').click().run();self.assertFalse(a.exception)
    next(t for t in a.checkbox if t.label.startswith('Confirmo os municípios')).check();next(t for t in a.button if t.label=='Confirmar escopo').click().run();self.assertFalse(a.exception)
@@ -107,7 +108,7 @@ class ContractRules(unittest.TestCase):
   import storage
   self.load([{}, {'stamp':'02/09/2026 10:00'}])
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
-   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.date_input[0].set_value(date(2026,9,1)).run();a.sidebar.selectbox[0].set_value('Vistorias').run();a.sidebar.radio[0].set_value('Serviços e Tabela de Preços').run()
+   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.date_input[0].set_value(date(2026,9,1)).run();navigate(a,module='Vistorias');navigate(a,'Regras comerciais de Vistorias')
    next(v for v in a.selectbox if v.label=='Categoria do critério').set_value('200014105').run()
    next(v for v in a.selectbox if v.label=='Critério de cobrança').set_value('manual');next(v for v in a.text_input if v.label=='Justificativa/documento do critério').set_value('Documento confirmado')
    next(v for v in a.button if v.label=='Calcular impacto do critério').click().run();self.assertFalse(a.exception);self.assertEqual(self.preview()['inspection_cents'],2250)

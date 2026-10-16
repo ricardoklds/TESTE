@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 import hashlib,json,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -67,7 +68,7 @@ class CatalogChanges(unittest.TestCase):
   import os,storage
   self.load()
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
-   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.selectbox[0].set_value('Vistorias').run();a.sidebar.radio[0].set_value('Serviços e Tabela de Preços').run()
+   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();navigate(a,module='Vistorias');navigate(a,'Serviços e Tabela de Preços')
    next(s for s in a.selectbox if s.label=='Descrição TSS para editar').set_value('VISTORIA CADASTRAL').run()
    next(s for s in a.selectbox if s.label=='Categoria para cobrança').set_value('200014106')
    next(t for t in a.text_input if t.label=='Competência inicial da classificação').set_value('2026-09')

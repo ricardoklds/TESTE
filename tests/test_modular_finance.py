@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 import json,os,sqlite3,tempfile,unittest,hashlib
 from pathlib import Path
 from io import BytesIO
@@ -107,12 +108,12 @@ class ModularFinanceTests(unittest.TestCase):
   import storage
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data),patch.object(bill,'reconciliation',side_effect=AssertionError('Exportação automática')):
    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run()
-   app.sidebar.selectbox[0].set_value('Vistorias').run()
+   navigate(app,module='Vistorias')
    for page in ['Painel de Vistorias','Importação de Vistorias','Prazos e Meta Contratual','Serviços e Tabela de Preços','Geolocalização','Faturamento de Vistorias','Relatórios de Vistorias']:
-    app.sidebar.radio[0].set_value(page).run();self.assertFalse(app.exception,page)
+    navigate(app,page);self.assertFalse(app.exception,page)
     if page=='Serviços e Tabela de Preços':
      next(s for s in app.selectbox if s.label=='Serviço').set_value('200014104').run()
      self.assertEqual(next(t for t in app.text_input if t.label=='Preço unitário em reais').value,'12,00')
    for module in ['Painel geral','Fechamento geral']:
-    app.sidebar.selectbox[0].set_value(module).run();self.assertFalse(app.exception,module)
+    navigate(app,module=module);self.assertFalse(app.exception,module)
 if __name__=='__main__':unittest.main()

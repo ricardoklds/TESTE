@@ -1,3 +1,4 @@
+from ui_navigation import navigate
 from contextlib import closing
 from datetime import date
 from io import BytesIO
@@ -93,7 +94,7 @@ class HolidayCardTests(unittest.TestCase):
             self.assertEqual(at.metric[2].value,'R$ 0,00')
             self.assertTrue(at.button(key='holiday_card_prepare').disabled)
             self.assertEqual(len(at.get('download_button')),0)
-            at.sidebar.radio[0].set_value('Relatórios').run()
+            navigate(at,'Relatórios')
             self.assertFalse(at.exception)
             self.assertFalse(any(b.key=='holiday_card_prepare' for b in at.button))
             self.assertTrue(any('Registros sem data' in m.label for m in at.metric))

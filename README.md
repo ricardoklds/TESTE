@@ -1,3 +1,5 @@
+Interface atual: [menu expansível, Geolocalização e simulação de glosa](INTERFACE_SIMPLIFICADA.md).
+
 Atualização consolidada de Vistorias: [escopo permanente, cobrança por OS, conciliação e Windows](ESCOPO_CONTRATUAL_VISTORIAS.md).
 
 # Gestão de medição e fechamento mensal
