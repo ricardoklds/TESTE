@@ -1,0 +1,20 @@
+{
+  "readings_panel_month_first_seconds": 5.20441271198797,
+  "readings_panel_cached_seconds": [
+    0.0684484480007086,
+    0.06562854500953108,
+    0.06433707600808702
+  ],
+  "readings_total": "R$ 1.439.999,45",
+  "holiday_value": "R$ 24.999,45",
+  "deadline_aggregate_seconds": 0.04393868401530199,
+  "operational_total": {
+    "total": 100000,
+    "inside": 99000,
+    "outside": 1000,
+    "percent": 99.0,
+    "outside_percent": 1.0,
+    "met": true
+  },
+  "deadline_navigation_seconds": 0.0912182480096817
+}

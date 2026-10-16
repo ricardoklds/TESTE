@@ -1,0 +1,13 @@
+{
+  "variant": "after",
+  "summary_seconds": [
+    0.4817674480145797,
+    0.49021137700765394,
+    0.4800512579968199
+  ],
+  "inspection_cents": 120000000,
+  "quantity": 100000,
+  "impact_preview_seconds": 1.101351835008245,
+  "impact_delta_cents": 105000000,
+  "simulation_bank_unchanged": true
+}

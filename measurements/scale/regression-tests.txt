@@ -1,0 +1,70 @@
+2026-10-14 21:45:29.543 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.544 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.544 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.544 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.544 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.544 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-14 21:45:29.545 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+test_calendar_and_locality_forms (test_holidays.HolidayTests.test_calendar_and_locality_forms) ... 2026-10-14 21:45:29.658 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_calendar_crud_uniqueness_and_closed_snapshot (test_holidays.HolidayTests.test_calendar_crud_uniqueness_and_closed_snapshot) ... ok
+test_closed_pending_is_preserved_and_municipality_conflict (test_holidays.HolidayTests.test_closed_pending_is_preserved_and_municipality_conflict) ... ok
+test_exclusions_causes_missing_town_and_sunday (test_holidays.HolidayTests.test_exclusions_causes_missing_town_and_sunday) ... ok
+test_national_state_and_municipal (test_holidays.HolidayTests.test_national_state_and_municipal) ... ok
+test_no_print_filter_and_five_rules_unchanged (test_holidays.HolidayTests.test_no_print_filter_and_five_rules_unchanged) ... ok
+test_overlap_duplicate_execution_and_restore (test_holidays.HolidayTests.test_overlap_duplicate_execution_and_restore) ... ok
+test_period_reports_and_cache (test_holidays.HolidayTests.test_period_reports_and_cache) ... 2026-10-14 21:45:30.605 No runtime found, using MemoryCacheStorageManager
+ok
+test_closed_month_reason_and_stale_confirmation (test_import_actions.ImportActions.test_closed_month_reason_and_stale_confirmation) ... ok
+test_delete_restore_finance_filters_and_other_imports (test_import_actions.ImportActions.test_delete_restore_finance_filters_and_other_imports) ... ok
+test_migration_backup_and_exact_records (test_import_actions.ImportActions.test_migration_backup_and_exact_records) ... ok
+test_reimport_restore_conflict_atomic_and_manual_exclusion (test_import_actions.ImportActions.test_reimport_restore_conflict_atomic_and_manual_exclusion) ... ok
+test_import_exclusion_confirmation_and_restore (test_interface.InterfaceTests.test_import_exclusion_confirmation_and_restore) ... 2026-10-14 21:45:33.035 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_month_change_resets_dates_and_reports_remain_monthly (test_interface.InterfaceTests.test_month_change_resets_dates_and_reports_remain_monthly) ... 2026-10-14 21:45:37.048 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_three_screens_month_day_interval_and_empty_day (test_interface.InterfaceTests.test_three_screens_month_day_interval_and_empty_day) ... 2026-10-14 21:45:38.518 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-14 21:45:39.215 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-14 21:45:40.126 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_automatic_exclusion_restore_sunday_and_five_regression (test_localities.LocalityTests.test_automatic_exclusion_restore_sunday_and_five_regression) ... ok
+test_legacy_city_header_resolution (test_localities.LocalityTests.test_legacy_city_header_resolution) ... ok
+test_official_codes_and_normalization (test_localities.LocalityTests.test_official_codes_and_normalization) ... ok
+test_scope_specific_proof_and_homonyms (test_localities.LocalityTests.test_scope_specific_proof_and_homonyms) ... ok
+test_september_national_without_manual_binding (test_localities.LocalityTests.test_september_national_without_manual_binding) ... ok
+test_state_only_and_documentary_country (test_localities.LocalityTests.test_state_only_and_documentary_country) ... ok
+test_aggregate_month_and_day_match_saved_rules (test_optimization.OptimizationTests.test_aggregate_month_and_day_match_saved_rules) ... ok
+test_bounded_identity_cache_reuses_four_trigger_calls (test_optimization.OptimizationTests.test_bounded_identity_cache_reuses_four_trigger_calls) ... ok
+test_listing_holiday_duplicate_owner_moves_and_cache_invalidates (test_optimization.OptimizationTests.test_listing_holiday_duplicate_owner_moves_and_cache_invalidates) ... ok
+test_listing_matches_preview_exclusion_restoration_and_freeze (test_optimization.OptimizationTests.test_listing_matches_preview_exclusion_restoration_and_freeze) ... ok
+test_progress_batches_and_rollback (test_optimization.OptimizationTests.test_progress_batches_and_rollback) ... ok
+test_sqlite_backup_and_recovery_keep_six_totals (test_optimization.OptimizationTests.test_sqlite_backup_and_recovery_keep_six_totals) ... ok
+test_streaming_export_preserves_empty_cells_numbers_and_literal_formulas (test_optimization.OptimizationTests.test_streaming_export_preserves_empty_cells_numbers_and_literal_formulas) ... ok
+test_background_export_allows_navigation (test_performance_queries.PerformanceQueries.test_background_export_allows_navigation) ... 2026-10-14 21:45:42.746 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_cache_revision_invalidation_for_all_mutations (test_performance_queries.PerformanceQueries.test_cache_revision_invalidation_for_all_mutations) ... ok
+test_fast_reports_and_streaming_details_have_same_total (test_performance_queries.PerformanceQueries.test_fast_reports_and_streaming_details_have_same_total) ... ok
+test_no_complete_record_read_during_navigation (test_performance_queries.PerformanceQueries.test_no_complete_record_read_during_navigation) ... 2026-10-14 21:46:06.522 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_pagination_bounded_and_row_exact (test_performance_queries.PerformanceQueries.test_pagination_bounded_and_row_exact) ... ok
+test_preview_small_and_stream_rollback_on_failure (test_performance_queries.PerformanceQueries.test_preview_small_and_stream_rollback_on_failure) ... /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/openpyxl/styles/stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+ok
+test_sql_matches_saved_financial_rules_and_periods (test_performance_queries.PerformanceQueries.test_sql_matches_saved_financial_rules_and_periods) ... ok
+test_day (test_periods.PeriodTests.test_day) ... ok
+test_duplicates_are_identified_over_whole_month (test_periods.PeriodTests.test_duplicates_are_identified_over_whole_month) ... ok
+test_empty_period (test_periods.PeriodTests.test_empty_period) ... ok
+test_filter_does_not_mutate_or_recalculate (test_periods.PeriodTests.test_filter_does_not_mutate_or_recalculate) ... ok
+test_inclusive_interval (test_periods.PeriodTests.test_inclusive_interval) ... ok
+test_leap_and_year_boundaries (test_periods.PeriodTests.test_leap_and_year_boundaries) ... ok
+test_mapping_and_typed_dates (test_periods.PeriodTests.test_mapping_and_typed_dates) ... ok
+test_month_and_missing_invalid_dates (test_periods.PeriodTests.test_month_and_missing_invalid_dates) ... ok
+test_outside_reference_month (test_periods.PeriodTests.test_outside_reference_month) ... ok
+test_quantities_values_and_productivity_use_same_valid_rows (test_periods.PeriodTests.test_quantities_values_and_productivity_use_same_valid_rows) ... ok
+test_rankings_change_with_period (test_periods.PeriodTests.test_rankings_change_with_period) ... ok
+test_reversed_period (test_periods.PeriodTests.test_reversed_period) ... ok
+
+----------------------------------------------------------------------
+Ran 47 tests in 40.414s
+
+OK

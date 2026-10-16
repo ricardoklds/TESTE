@@ -1,0 +1,129 @@
+{
+  "independent_and_sql_equal": true,
+  "independent_excel_result": {
+    "month": "2026-09",
+    "files": [
+      {
+        "name": "576513-setembro sanesi.xlsx",
+        "sha256": "5c71eb3f941ae38d49b4afc8f612ad9da6b09cf0bc239a2d046f0bd47b410a58",
+        "rows": 4431
+      }
+    ],
+    "quantities": {
+      "200014104": 561,
+      "200014106": 2402,
+      "200014105": 1219
+    },
+    "cents": {
+      "200014104": 673200,
+      "200014106": 5404500,
+      "200014105": 2742750
+    },
+    "reasons": {
+      "Excluído por classificação confirmada": 2,
+      "Faturável": 4182,
+      "Pendente: OS repetida": 24,
+      "Pendente: ligação inativa": 223
+    },
+    "processed": 4431,
+    "scope": "Catálogo e decisões exportados para 2026-09",
+    "total_cents": 8820450,
+    "catalog_sha256": "b4c0e542dd7783ca57782e2ced7a5b64ab15c8bda856529dd1789f953c12bcfe",
+    "comparison": {
+      "200014105": {
+        "calculated": 1219,
+        "reference": 1243,
+        "difference": -24
+      },
+      "200014106": {
+        "calculated": 2402,
+        "reference": 2679,
+        "difference": -277
+      },
+      "200014104": {
+        "calculated": 561,
+        "reference": 284,
+        "difference": 277
+      }
+    }
+  },
+  "sql_preview": {
+    "month": "2026-09",
+    "groups": [
+      {
+        "reason": "Excluído por classificação confirmada",
+        "code": null,
+        "quantity": 2,
+        "cents": 0
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014104",
+        "quantity": 561,
+        "cents": 673200
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014105",
+        "quantity": 1219,
+        "cents": 2742750
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014106",
+        "quantity": 2402,
+        "cents": 5404500
+      },
+      {
+        "reason": "Pendente: OS repetida",
+        "code": "200014105",
+        "quantity": 24,
+        "cents": 0
+      },
+      {
+        "reason": "Pendente: ligação inativa",
+        "code": null,
+        "quantity": 223,
+        "cents": 0
+      }
+    ],
+    "services": [
+      {
+        "code": "200014105",
+        "name": "Vistoria para aprovação de ligação",
+        "quantity": 1219,
+        "cents": 2742750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014106",
+        "name": "Vistoria predial",
+        "quantity": 2402,
+        "cents": 5404500,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014104",
+        "name": "Vistoria de atualização cadastral",
+        "quantity": 561,
+        "cents": 673200,
+        "unit_cents": 1200
+      }
+    ],
+    "pending": 247,
+    "undated": 0,
+    "ready": false,
+    "sync_pending": 0,
+    "geo": {
+      "quantity": 0,
+      "cents": 0,
+      "ready": false,
+      "reason": "Geolocalização não confirmada (zero deve ser informado explicitamente)."
+    },
+    "inspection_cents": 8820450,
+    "revision": 2,
+    "fingerprint": "ada514480753abc342c03ba4b0e565de19e25a1bf33da2c5b27a20ba2423752d"
+  },
+  "production_accessed": false,
+  "original_sha256_unchanged": "5c71eb3f941ae38d49b4afc8f612ad9da6b09cf0bc239a2d046f0bd47b410a58"
+}

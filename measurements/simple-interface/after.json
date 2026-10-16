@@ -1,0 +1,319 @@
+{
+  "readings_cached_seconds": [
+    0.021098308003274724,
+    0.018099754001013935,
+    0.017518798005767167
+  ],
+  "closing_cached_seconds": [
+    0.009738561988342553,
+    0.00948850900749676,
+    0.01068697200389579
+  ],
+  "simulation_seconds": [
+    0.01030173001345247,
+    0.009654544002842158,
+    0.00932139198994264,
+    0.008912816003430635
+  ],
+  "readings_total": "R$ 1.439.999,45",
+  "holiday_total": "R$ 24.999,45",
+  "visits_first_navigation_seconds": 1.6017789129982702,
+  "return_readings_seconds": 0.022307141014607623,
+  "closing_first_seconds": 2.094749771989882,
+  "simulation_banks_unchanged": true,
+  "before_geo": {
+    "month": "2026-09",
+    "readings": {
+      "cents": 143999945,
+      "closed": false,
+      "revision": 2,
+      "holiday_quantity": 23809,
+      "units": {
+        "138": 250000,
+        "128": 250000,
+        "137": 0,
+        "impressao": 1000000,
+        "apontamento": 500000,
+        "feriado": 23809
+      }
+    },
+    "visits": {
+      "month": "2026-09",
+      "groups": [
+        {
+          "reason": "Faturável",
+          "code": "200014104",
+          "quantity": 50000,
+          "cents": 60000000
+        },
+        {
+          "reason": "Faturável",
+          "code": "200014105",
+          "quantity": 50000,
+          "cents": 112500000
+        }
+      ],
+      "municipalities": [
+        {
+          "municipality": "BOCAINA",
+          "operational_count": 100000,
+          "billed_count": 100000,
+          "cents": 172500000,
+          "pending": 0
+        }
+      ],
+      "policy": {
+        "allowed": [
+          "AGUDOS",
+          "ALAMBARI",
+          "ALUMINIO",
+          "ANHEMBI",
+          "ARACARIGUAMA",
+          "AREALVA",
+          "AREIOPOLIS",
+          "BOCAINA",
+          "BOFETE",
+          "BOITUVA",
+          "BORACEIA",
+          "BOTUCATU",
+          "CAPELA DO ALTO",
+          "CESARIO LANGE",
+          "CONCHAS",
+          "DOURADO",
+          "IBIUNA",
+          "IPERO",
+          "LARANJAL PAULISTA",
+          "PEDERNEIRAS",
+          "PEREIRAS",
+          "PIEDADE",
+          "PORANGABA",
+          "QUADRA",
+          "SALTO DE PIRAPORA",
+          "SAO MANUEL",
+          "SAO ROQUE",
+          "SARAPUI",
+          "TATUI",
+          "TORRE DE PEDRA",
+          "TORRINHA"
+        ],
+        "excluded": [
+          "ARACOIABA DA SERRA",
+          "MACATUBA"
+        ],
+        "modes": {
+          "200014105": "once",
+          "200014106": "manual",
+          "200014104": "manual"
+        },
+        "legacy": false,
+        "effective": "2026-09"
+      },
+      "services": [
+        {
+          "code": "200014105",
+          "name": "Vistoria para aprovação de ligação",
+          "quantity": 50000,
+          "cents": 112500000,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014106",
+          "name": "Vistoria predial",
+          "quantity": 0,
+          "cents": 0,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014104",
+          "name": "Vistoria de atualização cadastral",
+          "quantity": 50000,
+          "cents": 60000000,
+          "unit_cents": 1200
+        }
+      ],
+      "rates": [
+        {
+          "code": "200014104",
+          "unit_cents": 1200,
+          "quantity": 50000
+        },
+        {
+          "code": "200014105",
+          "unit_cents": 2250,
+          "quantity": 50000
+        }
+      ],
+      "pending": 0,
+      "undated": 0,
+      "ready": true,
+      "sync_pending": 0,
+      "geo": {
+        "quantity": 10,
+        "unit_cents": 1200,
+        "cents": 12000,
+        "ready": true,
+        "mode": "Total mensal",
+        "cities_total": null,
+        "reference_total": 10,
+        "out_of_scope_quantity": 0,
+        "unknown_municipalities": {},
+        "reason": ""
+      },
+      "inspection_cents": 172500000,
+      "revision": 4,
+      "fingerprint": "cd17b457cb4571fee46126cd12324c8a1766d450303448f2d8dc5785ebe1879a",
+      "approved": false
+    },
+    "gross_cents": 316511945,
+    "ready": false
+  },
+  "geo_entry_seconds": 0.0066691910033114254,
+  "geo_save_seconds": 0.010162099992157891,
+  "after_geo": {
+    "month": "2026-09",
+    "readings": {
+      "cents": 143999945,
+      "closed": false,
+      "revision": 2,
+      "holiday_quantity": 23809,
+      "units": {
+        "138": 250000,
+        "128": 250000,
+        "137": 0,
+        "impressao": 1000000,
+        "apontamento": 500000,
+        "feriado": 23809
+      }
+    },
+    "visits": {
+      "month": "2026-09",
+      "groups": [
+        {
+          "reason": "Faturável",
+          "code": "200014104",
+          "quantity": 50000,
+          "cents": 60000000
+        },
+        {
+          "reason": "Faturável",
+          "code": "200014105",
+          "quantity": 50000,
+          "cents": 112500000
+        }
+      ],
+      "municipalities": [
+        {
+          "municipality": "BOCAINA",
+          "operational_count": 100000,
+          "billed_count": 100000,
+          "cents": 172500000,
+          "pending": 0
+        }
+      ],
+      "policy": {
+        "allowed": [
+          "AGUDOS",
+          "ALAMBARI",
+          "ALUMINIO",
+          "ANHEMBI",
+          "ARACARIGUAMA",
+          "AREALVA",
+          "AREIOPOLIS",
+          "BOCAINA",
+          "BOFETE",
+          "BOITUVA",
+          "BORACEIA",
+          "BOTUCATU",
+          "CAPELA DO ALTO",
+          "CESARIO LANGE",
+          "CONCHAS",
+          "DOURADO",
+          "IBIUNA",
+          "IPERO",
+          "LARANJAL PAULISTA",
+          "PEDERNEIRAS",
+          "PEREIRAS",
+          "PIEDADE",
+          "PORANGABA",
+          "QUADRA",
+          "SALTO DE PIRAPORA",
+          "SAO MANUEL",
+          "SAO ROQUE",
+          "SARAPUI",
+          "TATUI",
+          "TORRE DE PEDRA",
+          "TORRINHA"
+        ],
+        "excluded": [
+          "ARACOIABA DA SERRA",
+          "MACATUBA"
+        ],
+        "modes": {
+          "200014105": "once",
+          "200014106": "manual",
+          "200014104": "manual"
+        },
+        "legacy": false,
+        "effective": "2026-09"
+      },
+      "services": [
+        {
+          "code": "200014105",
+          "name": "Vistoria para aprovação de ligação",
+          "quantity": 50000,
+          "cents": 112500000,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014106",
+          "name": "Vistoria predial",
+          "quantity": 0,
+          "cents": 0,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014104",
+          "name": "Vistoria de atualização cadastral",
+          "quantity": 50000,
+          "cents": 60000000,
+          "unit_cents": 1200
+        }
+      ],
+      "rates": [
+        {
+          "code": "200014104",
+          "unit_cents": 1200,
+          "quantity": 50000
+        },
+        {
+          "code": "200014105",
+          "unit_cents": 2250,
+          "quantity": 50000
+        }
+      ],
+      "pending": 0,
+      "undated": 0,
+      "ready": true,
+      "sync_pending": 0,
+      "geo": {
+        "quantity": 7,
+        "unit_cents": 1200,
+        "cents": 8400,
+        "ready": true,
+        "mode": "Total mensal",
+        "cities_total": null,
+        "reference_total": 7,
+        "out_of_scope_quantity": 0,
+        "unknown_municipalities": {},
+        "reason": ""
+      },
+      "inspection_cents": 172500000,
+      "revision": 5,
+      "fingerprint": "cb3326e695a18bac73b4c83334719ecd5ce2774ff95e8aaf0c6324a0def70e4b",
+      "approved": false
+    },
+    "gross_cents": 316508345,
+    "ready": false
+  },
+  "peak_rss_mib": 868.63671875
+}

@@ -1,0 +1,14 @@
+test_delete_restore_freeze_and_empty_month (test_reconciliation.ReconciliationTests.test_delete_restore_freeze_and_empty_month) ... ok
+test_exact_ids_and_financial_delta_read_only (test_reconciliation.ReconciliationTests.test_exact_ids_and_financial_delta_read_only) ... Auditando registros e seis regras, sem gravar na base…
+Conferindo integridade SQLite…
+ok
+test_month_is_accumulated_but_explicit_full_interval_is_dated (test_reconciliation.ReconciliationTests.test_month_is_accumulated_but_explicit_full_interval_is_dated) ... ok
+test_three_screens_match_audit_and_daily_does_not_include_undated (test_reconciliation.ReconciliationTests.test_three_screens_match_audit_and_daily_does_not_include_undated) ... 2026-10-15 13:16:23.046 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 13:16:24.058 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 13:16:24.509 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 2.046s
+
+OK

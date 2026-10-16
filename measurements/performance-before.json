@@ -1,0 +1,15 @@
+{
+  "records": 19668,
+  "stages": {
+    "load_and_decode_all_records": 0.4915,
+    "monthly_summary": 0.028,
+    "date_filter_full_month": 0.0858,
+    "import_preview": 0.9389,
+    "initial_screen": 2.3878,
+    "Importar planilhas": 2.2575,
+    "Fechamento mensal": 1.8545,
+    "Produtividade": 1.1832,
+    "Relat\u00f3rios": 1.2837
+  },
+  "peak_rss_mib": 1126.3359375
+}

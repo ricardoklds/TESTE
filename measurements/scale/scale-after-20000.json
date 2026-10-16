@@ -1,0 +1,97 @@
+{
+  "rows": 20000,
+  "code": "/workspace/TESTE",
+  "synthetic": true,
+  "input_shape": "72 colunas; 23 preenchidas, 49 vazias; arquivos diários de 20.000 linhas",
+  "memory_method": "VmRSS amostrada a cada 20 ms; processo novo por cenário",
+  "excel_import": {
+    "seconds": 7.848674,
+    "peak_rss_mb": 72.7
+  },
+  "financial": {
+    "2026-09": {
+      "units": {
+        "138": 8392,
+        "128": 8390,
+        "137": 1679,
+        "impressao": 30000,
+        "apontamento": 6667
+      },
+      "holiday_quantity": 0,
+      "total_cents": 4295389
+    }
+  },
+  "billing_all_months": {
+    "seconds": 0.038671,
+    "peak_rss_mb": 72.84
+  },
+  "financial_regression": {
+    "seconds": 0.596442,
+    "peak_rss_mb": 72.84
+  },
+  "sql_cold_month": {
+    "seconds": 0.037846,
+    "peak_rss_mb": 73.09
+  },
+  "filter_day": {
+    "seconds": 0.042807,
+    "peak_rss_mb": 73.09
+  },
+  "filter_interval": {
+    "seconds": 0.04169,
+    "peak_rss_mb": 73.1
+  },
+  "productivity": {
+    "seconds": 0.057369,
+    "peak_rss_mb": 74.33
+  },
+  "page_first": {
+    "seconds": 0.004943,
+    "peak_rss_mb": 74.34
+  },
+  "page_last": {
+    "seconds": 0.005656,
+    "peak_rss_mb": 74.34
+  },
+  "summary_excel": {
+    "seconds": 0.010794,
+    "peak_rss_mb": 74.59
+  },
+  "pdf": {
+    "seconds": 0.040672,
+    "peak_rss_mb": 74.63
+  },
+  "full_excel_bytes": 2791045,
+  "full_excel": {
+    "seconds": 5.188212,
+    "peak_rss_mb": 75.14
+  },
+  "delete_import": {
+    "seconds": 0.170845,
+    "peak_rss_mb": 75.47
+  },
+  "restore_import": {
+    "seconds": 0.206145,
+    "peak_rss_mb": 77.74
+  },
+  "screens": {
+    "Painel inicial": 0.056952,
+    "Importar planilhas": 0.106515,
+    "Fechamento mensal": 0.101239,
+    "Produtividade": 0.078502,
+    "Relatórios": 0.049708
+  },
+  "navigation": {
+    "seconds": 1.011015,
+    "peak_rss_mb": 202.8
+  },
+  "db_bytes": 91148288,
+  "sql_plan": [
+    [
+      4,
+      0,
+      49,
+      "SEARCH record_metrics USING INDEX metrics_month_day (month=? AND day>? AND day<?)"
+    ]
+  ]
+}
