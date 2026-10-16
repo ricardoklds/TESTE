@@ -5,10 +5,20 @@ import os
 
 st.set_page_config(page_title='Gestão de Medição | Fechamento',page_icon='💧',layout='wide')
 st.markdown('''<style>
-.block-container{padding-top:2rem;max-width:1450px} h1{font-weight:750;letter-spacing:-1px}
+.block-container{padding-top:4.5rem;padding-bottom:2rem;max-width:1450px} h1{font-weight:750;letter-spacing:-1px}
 [data-testid="stSidebar"]{background:#163a60} [data-testid="stSidebar"] *{color:#f7fafc}
 [data-testid="stMetric"]{background:white;border:1px solid #dce5ee;border-radius:12px;padding:18px}
-.stButton button{border-radius:8px} [data-testid="stSidebar"] input{color:#163a60}
+.stButton button{border-radius:8px} [data-testid="stSidebar"] input{color:#f7fafc}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:.55rem}
+[data-testid="stSidebar"] [data-testid="stSidebarUserContent"]{padding-top:1rem}
+[data-testid="stSidebar"] [data-testid="stExpander"] details{background:#163a60;border:1px solid #52708f;border-radius:8px}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+[data-testid="stSidebar"] [data-testid="stExpanderDetails"]{background:#163a60}
+[data-testid="stSidebar"] [data-baseweb="select"]>div,
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-baseweb="input"] input{background:#214b75;color:#f7fafc}
+[data-testid="stSidebar"] button[kind="secondary"]:hover{background:#2b5b88;border-color:#a4c9e7}
+[data-testid="stSidebar"] button[kind="primary"]{box-shadow:inset 3px 0 #a9daff}
 [data-testid="stSidebar"] button[kind="secondary"]{background:#214b75;border-color:#52708f;color:#f7fafc}
 [data-testid="stSidebar"] button[kind="primary"]{background:#1768a7;border-color:#73a8d0;color:#fff}
 </style>''',unsafe_allow_html=True)
@@ -23,10 +33,8 @@ with st.sidebar:
     st.caption('GESTÃO DO CONTRATO')
     import navigation
     module,page=navigation.sidebar(st)
-    st.divider()
-    reference=st.date_input('Mês de referência',value=date(2026,10,1),format='DD/MM/YYYY')
+    reference=navigation.reference_month(st)
     month=reference.strftime('%Y-%m')
-    st.caption('O dia selecionado não afeta o fechamento.')
     st.caption('Dados locais · Originais preservados')
 
 data_path=Path(os.environ.get('APP_DATA_DIR',str(Path(__file__).parent/'data')))

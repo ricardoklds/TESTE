@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 """Testa filtros contra uma cópia da base real, sem modificar dados de produção.
 
@@ -87,11 +88,11 @@ class InterfaceTests(unittest.TestCase):
         at=self.app('Painel inicial')
         at.radio(key='period_mode').set_value('Dia específico').run()
         at.date_input(key='period_day_2026-10').set_value(date(2026,10,10)).run()
-        at.sidebar.date_input[0].set_value(date(2026,11,1)).run()
+        set_month(at,date(2026,11,1)).run()
         self.assertFalse(at.exception)
         self.assertEqual(at.date_input(key='period_day_2026-11').value,date(2026,11,1))
         self.assertEqual(at.metric[0].value,'R$ 0,00')
-        at.sidebar.date_input[0].set_value(date(2026,10,1)).run()
+        set_month(at,date(2026,10,1)).run()
         navigate(at,'Relatórios')
         self.assertEqual(at.metric[0].value,'R$ 30.454,12')
         self.assertFalse(at.exception)

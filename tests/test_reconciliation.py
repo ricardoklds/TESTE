@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 from contextlib import closing
 from datetime import date
@@ -65,7 +66,7 @@ class ReconciliationTests(unittest.TestCase):
         root=Path(__file__).resolve().parents[1]
         for page in ('Painel inicial','Fechamento mensal','Produtividade'):
             at=AppTest.from_file(str(root/'app.py'),default_timeout=60).run()
-            at.sidebar.date_input[0].set_value(date(2026,9,1)).run()
+            set_month(at,date(2026,9,1)).run()
             navigate(at,page)
             at.radio(key='period_mode').set_value('Mês completo').run()
             self.assertFalse(at.exception)

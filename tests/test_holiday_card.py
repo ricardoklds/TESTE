@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 from contextlib import closing
 from datetime import date
@@ -80,7 +81,7 @@ class HolidayCardTests(unittest.TestCase):
         before=inventory(storage.DATA)
         with patch.object(holiday_card_export,'prepare',wraps=holiday_card_export.prepare) as prepare:
             at=AppTest.from_file(str(root/'app.py'),default_timeout=60).run()
-            at.sidebar.date_input[0].set_value(date(2026,9,1)).run()
+            set_month(at,date(2026,9,1)).run()
             self.assertFalse(at.exception);self.assertEqual(prepare.call_count,0)
             self.assertEqual(at.metric[2].value,'R$ 2,10')
             self.assertTrue(any('Quantidade: 2 leituras' in c.value for c in at.caption))

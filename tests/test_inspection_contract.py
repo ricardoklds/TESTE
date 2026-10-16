@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 import hashlib,json,os,sqlite3,tempfile,unittest
 from pathlib import Path
@@ -106,7 +107,7 @@ class ContractRules(unittest.TestCase):
   import storage
   self.load([{}, {'stamp':'02/09/2026 10:00'}])
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
-   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.date_input[0].set_value(date(2026,9,1)).run();navigate(a,module='Vistorias');navigate(a,'Regras comerciais de Vistorias')
+   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();set_month(a,date(2026,9,1)).run();navigate(a,module='Vistorias');navigate(a,'Regras comerciais de Vistorias')
    next(v for v in a.selectbox if v.label=='Categoria do critério').set_value('200014105').run()
    next(v for v in a.selectbox if v.label=='Critério de cobrança').set_value('manual')
    next(v for v in a.button if v.label=='Calcular impacto do critério').click().run();self.assertFalse(a.exception);self.assertEqual(self.preview()['inspection_cents'],2250)

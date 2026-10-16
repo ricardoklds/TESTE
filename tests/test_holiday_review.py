@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 """Filtros de conferência em bancos sintéticos; nenhuma decisão financeira."""
 from datetime import date
@@ -122,7 +123,7 @@ class HolidayReviewTests(unittest.TestCase):
     def test_interface_situation_and_summary(self):
         self.add('1',city='Desconhecido');self.add('2')
         app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=60).run()
-        app.sidebar.date_input[0].set_value(date(2026,9,1)).run()
+        set_month(app,date(2026,9,1)).run()
         navigate(app,'Fechamento mensal')
         self.assertFalse(app.exception)
         situation=next(s for s in app.selectbox if s.label=='Situação')

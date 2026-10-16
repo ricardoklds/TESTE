@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 import unittest,tempfile,sys
 from pathlib import Path
@@ -45,7 +46,7 @@ class Inspections(unittest.TestCase):
   import storage
   with patch.dict(os.environ,{'APP_DATA_DIR':self.root}),patch.object(storage,'DATA',Path(self.root)):
    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run()
-   app.sidebar.date_input[0].set_value(date(2026,9,1))
+   set_month(app,date(2026,9,1))
    with patch.object(api,'export',side_effect=AssertionError('Exportação automática indevida')):
     navigate(app,module='Vistorias')
     navigate(app,'Prazos e Meta Contratual')

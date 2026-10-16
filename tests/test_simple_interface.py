@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 import hashlib,json,os,sqlite3,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -21,7 +22,7 @@ class SimpleInterface(unittest.TestCase):
   from streamlit.testing.v1 import AppTest
   import storage
   with patch.dict(os.environ,{'APP_DATA_DIR':str(self.data)}),patch.object(storage,'DATA',self.data):
-   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();a.sidebar.date_input[0].set_value(date(2026,9,1)).run()
+   a=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run();set_month(a,date(2026,9,1)).run()
    self.assertFalse(a.exception);yield a
  def bank_hashes(self):return {str(p.relative_to(self.data)):hashlib.sha256(p.read_bytes()).hexdigest() for p in self.data.rglob('*.sqlite3')}
  def metric(self,a,label):return next(m.value for m in a.metric if m.label==label)
@@ -83,7 +84,7 @@ class SimpleInterface(unittest.TestCase):
   self.load();bill.save_geo(self.root,'2026-09','Total mensal',2,{})
   name=next(s['name'] for s in bill.service_list(self.root,'2026-09') if s['code']=='geo');bill.save_service(self.root,'geo',name,'2026-10',1300,True,'Reajuste')
   with self.app() as a:
-   navigate(a,'Geolocalização');self.assertEqual(self.metric(a,'Preço unitário vigente'),'R$ 12,00');a.sidebar.date_input[0].set_value(date(2026,10,1)).run();self.assertEqual(self.metric(a,'Preço unitário vigente'),'R$ 13,00')
+   navigate(a,'Geolocalização');self.assertEqual(self.metric(a,'Preço unitário vigente'),'R$ 12,00');set_month(a,date(2026,10,1)).run();self.assertEqual(self.metric(a,'Preço unitário vigente'),'R$ 13,00')
   for quantity in [-1,1.5,True]:
    with self.assertRaises(ValueError):bill.save_geo(self.root,'2026-09','Total mensal',quantity,{})
   with self.assertRaises(ValueError):bill.save_geo(self.root,'2026-09','Por município',None,{'Bocaina':1,'BOCAÍNA':2})

@@ -55,6 +55,19 @@ def render(data,month,page):
                 progress=st.empty();n=api.sync(root,lambda n:progress.write(f'{n:,} registros projetados'))
                 status.update(label=f'{n} registros preparados',state='complete')
             st.rerun()
+    if page=='Produtividade de Vistorias':
+        rows=p['municipalities'] if 'municipalities' in p else cached_municipal(root,month,revision)
+        frame=pd.DataFrame([{'Município':r['municipality'] or 'Não informado',
+            'Registros operacionais':r['operational_count'],'Vistorias faturáveis':r['billed_count'],
+            'Faturamento de vistorias':money(r['cents']),'Pendências':r['pending']} for r in rows])
+        st.caption('Totais contratuais existentes por município, sem geolocalização. O arquivo não informa o executor individual.')
+        if p['approved']:st.info('Competência aprovada: totais da fotografia mensal preservados.')
+        if p['undated']:st.warning(f"{p['undated']} registros sem data de execução permanecem sem competência presumida.")
+        if frame.empty:st.info('Sem registros para esta competência.')
+        else:
+            st.bar_chart(frame.set_index('Município')[['Vistorias faturáveis']],color='#1768a7')
+            st.dataframe(frame,hide_index=True,width='stretch')
+        return
     cols=st.columns(3);cols[0].metric('Vistorias · valor aprovado' if p['approved'] else 'Vistorias · prévia',money(p['inspection_cents']));cols[1].metric('Pendências comerciais',p['pending']);cols[2].metric('Geolocalização',money(p['geo']['cents']))
     if p['approved']:st.success('Competência aprovada. Valores preservados por fotografia mensal.')
     else:st.warning('PRÉVIA — não é fechamento definitivo; depende da conciliação e aprovação.')

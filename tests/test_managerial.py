@@ -1,3 +1,4 @@
+from ui_navigation import set_month
 from ui_navigation import navigate
 from contextlib import closing
 from io import BytesIO
@@ -112,7 +113,7 @@ class ManagementTests(unittest.TestCase):
         p=self.populate();root=Path(__file__).resolve().parents[1]
         from datetime import date
         at=AppTest.from_file(str(root/'app.py'),default_timeout=60).run()
-        at.sidebar.date_input[0].set_value(date(2026,9,1)).run()
+        set_month(at,date(2026,9,1)).run()
         baseline=self.get(p)
         self.assertFalse(at.exception)
         self.assertEqual(at.metric[0].value,__import__('exports').money(baseline['total_cents']))
