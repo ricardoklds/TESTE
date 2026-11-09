@@ -1,0 +1,48 @@
+{
+  "synthetic": true,
+  "rows": 1000000,
+  "method": "SQL fixture, one month, 30 days, one run, no Excel import measured, no browser measured",
+  "measurements": {
+    "Todos": {
+      "seconds": 3.54496,
+      "count": 166667,
+      "page_rows": 100
+    },
+    "Elegíveis cobrados": {
+      "seconds": 3.436718,
+      "count": 28572,
+      "page_rows": 100
+    },
+    "Pendências": {
+      "seconds": 3.527111,
+      "count": 138095,
+      "page_rows": 100
+    },
+    "Não cobrados": {
+      "seconds": 3.592379,
+      "count": 138095,
+      "page_rows": 100
+    },
+    "summary_seconds": 1.83517
+  },
+  "cached_endpoint_seconds": {
+    "Todos": 3.720501,
+    "Elegíveis cobrados": 1.720437,
+    "Pendências": 1.769445,
+    "Não cobrados": 1.774304,
+    "pending_summary_seconds": 0.000622,
+    "warm_pending_page_seconds": 0.000353
+  },
+  "pending_summary": [
+    {
+      "Motivo": "Domingo: conferir",
+      "Quantidade": 133333
+    },
+    {
+      "Motivo": "Execução no Brasil não comprovada",
+      "Quantidade": 4762
+    }
+  ],
+  "financial_totals_unchanged": true,
+  "integrity_check": "ok"
+}

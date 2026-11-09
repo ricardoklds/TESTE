@@ -1,0 +1,31 @@
+test_ambiguous_locality_brazil_proof_and_conflicting_execution (test_independent_validation.IndependentTests.test_ambiguous_locality_brazil_proof_and_conflicting_execution) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpa0wkmmom/localidades
+ok
+test_delete_restore_and_frozen_calendar_difference_is_not_corrected (test_independent_validation.IndependentTests.test_delete_restore_and_frozen_calendar_difference_is_not_corrected) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpmlj590xz/deleted
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpmlj590xz/excluded
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpmlj590xz/restored
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpmlj590xz/frozen
+ok
+test_five_rules_regression_cross_product_and_validation_errors (test_independent_validation.IndependentTests.test_five_rules_regression_cross_product_and_validation_errors) ... ok
+test_independence_from_saved_results_and_no_database_manifest_mode (test_independent_validation.IndependentTests.test_independence_from_saved_results_and_no_database_manifest_mode) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpln5cbmb_/distorted
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpln5cbmb_/offline
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpln5cbmb_/previous
+ok
+test_originais_and_holidays_scopes_bocaina_sunday_and_duplicates (test_independent_validation.IndependentTests.test_originais_and_holidays_scopes_bocaina_sunday_and_duplicates) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpvdzhu088/validacao
+ok
+test_source_integrity_output_protection_and_absent_month (test_independent_validation.IndependentTests.test_source_integrity_output_protection_and_absent_month) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmp34gim4ka/first
+ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.369s
+
+OK

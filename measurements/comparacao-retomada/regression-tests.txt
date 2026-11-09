@@ -1,0 +1,220 @@
+2026-10-15 14:37:19.532 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.533 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.533 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.533 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.534 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.534 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.534 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.534 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:19.534 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+test_absent_month_explicit_and_output_cannot_enter_data (test_auditoria.AuditTests.test_absent_month_explicit_and_output_cannot_enter_data) ... Conferindo integridade SQLite…
+ok
+test_date_classes_original_duplicates_financial_and_read_only (test_auditoria.AuditTests.test_date_classes_original_duplicates_financial_and_read_only) ... Auditando registros e seis regras, sem gravar na base…
+Conferindo original: original.xlsx Sheet
+Conferindo original: repetido.xlsx Outra aba
+Conferindo integridade SQLite…
+ok
+test_excluded_and_closed_snapshots_audited_without_modification (test_auditoria.AuditTests.test_excluded_and_closed_snapshots_audited_without_modification) ... Auditando registros e seis regras, sem gravar na base…
+Conferindo integridade SQLite…
+Auditando registros e seis regras, sem gravar na base…
+Conferindo integridade SQLite…
+ok
+test_input_comparison_arithmetic (test_auditoria.AuditTests.test_input_comparison_arithmetic) ... ok
+test_orphan_projection_reported_without_changing_official_sum (test_auditoria.AuditTests.test_orphan_projection_reported_without_changing_official_sum) ... Auditando registros e seis regras, sem gravar na base…
+Conferindo integridade SQLite…
+ok
+test_834_synthetic_before_after_finance_pagination_and_exports (test_bocaina.BocainaTests.test_834_synthetic_before_after_finance_pagination_and_exports) ... ok
+test_closed_snapshot_reclassified_without_database_changes (test_bocaina.BocainaTests.test_closed_snapshot_reclassified_without_database_changes) ... ok
+test_date_municipality_uf_match_and_duplicate_control (test_bocaina.BocainaTests.test_date_municipality_uf_match_and_duplicate_control) ... ok
+test_exclusion_restore_still_preserves_monthly_finance (test_bocaina.BocainaTests.test_exclusion_restore_still_preserves_monthly_finance) ... ok
+test_national_state_and_mixed_scope_behavior_unchanged (test_bocaina.BocainaTests.test_national_state_and_mixed_scope_behavior_unchanged) ... ok
+test_really_ambiguous_locality_remains_pending_and_wrong_state_not_pending (test_bocaina.BocainaTests.test_really_ambiguous_locality_remains_pending_and_wrong_state_not_pending) ... ok
+test_reference_and_confirmation_are_contract_specific (test_bocaina.BocainaTests.test_reference_and_confirmation_are_contract_specific) ... ok
+test_legacy_resume_does_not_open_excel_or_overwrite_any_inputs (test_compare_resume.ResumeTests.test_legacy_resume_does_not_open_excel_or_overwrite_any_inputs) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmp4tdlpnn6/saved
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 1. Consulta de feriados concluída.
+3/4 e 4/4 Comparação agregada: usando as seis quantidades já salvas, sem ler Excel
+Comparação concluída em 0.00s.
+Comparação salva em /tmp/tmp4tdlpnn6/resumed. Cálculo original preservado.
+ok
+test_real_differences_are_reported_without_adjusting_saved_result (test_compare_resume.ResumeTests.test_real_differences_are_reported_without_adjusting_saved_result) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmp9sqax74a/saved
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 1. Consulta de feriados concluída.
+3/4 e 4/4 Comparação agregada: usando as seis quantidades já salvas, sem ler Excel
+Comparação concluída em 0.00s.
+Comparação salva em /tmp/tmp9sqax74a/different. Cálculo original preservado.
+ok
+test_stale_revision_and_inconsistent_json_are_rejected (test_compare_resume.ResumeTests.test_stale_revision_and_inconsistent_json_are_rejected) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpoemb2ex4/saved
+ok
+test_wrong_bank_imports_and_manifest_changes_are_rejected (test_compare_resume.ResumeTests.test_wrong_bank_imports_and_manifest_changes_are_rejected) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmp0zbrruhl/saved
+ok
+test_excel_complete_fields_filtered_rows_and_db_unchanged (test_holiday_review.HolidayReviewTests.test_excel_complete_fields_filtered_rows_and_db_unchanged) ... ok
+test_exclusion_restoration_cache_and_closed_snapshot (test_holiday_review.HolidayReviewTests.test_exclusion_restoration_cache_and_closed_snapshot) ... 2026-10-15 14:37:20.528 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 14:37:20.529 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+ok
+test_four_filters_reasons_and_financial_totals_unchanged (test_holiday_review.HolidayReviewTests.test_four_filters_reasons_and_financial_totals_unchanged) ... 2026-10-15 14:37:20.659 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+ok
+test_interface_situation_and_summary (test_holiday_review.HolidayReviewTests.test_interface_situation_and_summary) ... 2026-10-15 14:37:20.697 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_pagination_filters_and_no_bulk_financial_reads (test_holiday_review.HolidayReviewTests.test_pagination_filters_and_no_bulk_financial_reads) ... ok
+test_state_municipal_pending_and_closed_divergence_preserve_old_counters (test_holiday_review.HolidayReviewTests.test_state_municipal_pending_and_closed_divergence_preserve_old_counters) ... ok
+test_calendar_and_locality_forms (test_holidays.HolidayTests.test_calendar_and_locality_forms) ... 2026-10-15 14:37:22.021 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_calendar_crud_uniqueness_and_closed_snapshot (test_holidays.HolidayTests.test_calendar_crud_uniqueness_and_closed_snapshot) ... ok
+test_closed_pending_is_preserved_and_municipality_conflict (test_holidays.HolidayTests.test_closed_pending_is_preserved_and_municipality_conflict) ... ok
+test_exclusions_causes_missing_town_and_sunday (test_holidays.HolidayTests.test_exclusions_causes_missing_town_and_sunday) ... ok
+test_national_state_and_municipal (test_holidays.HolidayTests.test_national_state_and_municipal) ... ok
+test_no_print_filter_and_five_rules_unchanged (test_holidays.HolidayTests.test_no_print_filter_and_five_rules_unchanged) ... ok
+test_overlap_duplicate_execution_and_restore (test_holidays.HolidayTests.test_overlap_duplicate_execution_and_restore) ... ok
+test_period_reports_and_cache (test_holidays.HolidayTests.test_period_reports_and_cache) ... 2026-10-15 14:37:22.607 No runtime found, using MemoryCacheStorageManager
+ok
+test_closed_month_reason_and_stale_confirmation (test_import_actions.ImportActions.test_closed_month_reason_and_stale_confirmation) ... ok
+test_delete_restore_finance_filters_and_other_imports (test_import_actions.ImportActions.test_delete_restore_finance_filters_and_other_imports) ... ok
+test_migration_backup_and_exact_records (test_import_actions.ImportActions.test_migration_backup_and_exact_records) ... ok
+test_reimport_restore_conflict_atomic_and_manual_exclusion (test_import_actions.ImportActions.test_reimport_restore_conflict_atomic_and_manual_exclusion) ... ok
+test_ambiguous_locality_brazil_proof_and_conflicting_execution (test_independent_validation.IndependentTests.test_ambiguous_locality_brazil_proof_and_conflicting_execution) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 2. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmp710a70iy/localidades
+ok
+test_delete_restore_and_frozen_calendar_difference_is_not_corrected (test_independent_validation.IndependentTests.test_delete_restore_and_frozen_calendar_difference_is_not_corrected) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 0. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpn9yclkfs/deleted
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 0. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpn9yclkfs/excluded
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 1. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpn9yclkfs/restored
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 1. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpn9yclkfs/frozen
+ok
+test_five_rules_regression_cross_product_and_validation_errors (test_independent_validation.IndependentTests.test_five_rules_regression_cross_product_and_validation_errors) ... ok
+test_independence_from_saved_results_and_no_database_manifest_mode (test_independent_validation.IndependentTests.test_independence_from_saved_results_and_no_database_manifest_mode) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 0. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpbaakjpa6/distorted
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpbaakjpa6/offline
+Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpbaakjpa6/previous
+ok
+test_originais_and_holidays_scopes_bocaina_sunday_and_duplicates (test_independent_validation.IndependentTests.test_originais_and_holidays_scopes_bocaina_sunday_and_duplicates) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 5. Consulta de feriados concluída.
+3/4 Transferindo registros em lotes, sem juntar o calendário a cada linha
+4/4 Conferindo feriados por índice no banco temporário e conciliando somas
+Comparação concluída em 0.00s.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmpkgrju8m8/validacao
+ok
+test_source_integrity_output_protection_and_absent_month (test_independent_validation.IndependentTests.test_source_integrity_output_protection_and_absent_month) ... Recálculo independente concluído e gravado. Iniciando comparação, se solicitada.
+Gerando relatórios detalhados dos originais...
+Validação concluída. Nenhum dado de produção alterado. Saída: /tmp/tmph9a0nbmg/first
+ok
+test_import_exclusion_confirmation_and_restore (test_interface.InterfaceTests.test_import_exclusion_confirmation_and_restore) ... 2026-10-15 14:37:27.540 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_month_change_resets_dates_and_reports_remain_monthly (test_interface.InterfaceTests.test_month_change_resets_dates_and_reports_remain_monthly) ... 2026-10-15 14:37:31.632 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_three_screens_month_day_interval_and_empty_day (test_interface.InterfaceTests.test_three_screens_month_day_interval_and_empty_day) ... 2026-10-15 14:37:33.175 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 14:37:33.876 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 14:37:34.735 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_automatic_exclusion_restore_sunday_and_five_regression (test_localities.LocalityTests.test_automatic_exclusion_restore_sunday_and_five_regression) ... ok
+test_legacy_city_header_resolution (test_localities.LocalityTests.test_legacy_city_header_resolution) ... ok
+test_official_codes_and_normalization (test_localities.LocalityTests.test_official_codes_and_normalization) ... ok
+test_scope_specific_proof_and_homonyms (test_localities.LocalityTests.test_scope_specific_proof_and_homonyms) ... ok
+test_september_national_without_manual_binding (test_localities.LocalityTests.test_september_national_without_manual_binding) ... ok
+test_state_only_and_documentary_country (test_localities.LocalityTests.test_state_only_and_documentary_country) ... ok
+test_aggregate_month_and_day_match_saved_rules (test_optimization.OptimizationTests.test_aggregate_month_and_day_match_saved_rules) ... ok
+test_bounded_identity_cache_reuses_four_trigger_calls (test_optimization.OptimizationTests.test_bounded_identity_cache_reuses_four_trigger_calls) ... ok
+test_listing_holiday_duplicate_owner_moves_and_cache_invalidates (test_optimization.OptimizationTests.test_listing_holiday_duplicate_owner_moves_and_cache_invalidates) ... ok
+test_listing_matches_preview_exclusion_restoration_and_freeze (test_optimization.OptimizationTests.test_listing_matches_preview_exclusion_restoration_and_freeze) ... ok
+test_progress_batches_and_rollback (test_optimization.OptimizationTests.test_progress_batches_and_rollback) ... ok
+test_sqlite_backup_and_recovery_keep_six_totals (test_optimization.OptimizationTests.test_sqlite_backup_and_recovery_keep_six_totals) ... ok
+test_streaming_export_preserves_empty_cells_numbers_and_literal_formulas (test_optimization.OptimizationTests.test_streaming_export_preserves_empty_cells_numbers_and_literal_formulas) ... ok
+test_background_export_allows_navigation (test_performance_queries.PerformanceQueries.test_background_export_allows_navigation) ... 2026-10-15 14:37:37.363 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_cache_revision_invalidation_for_all_mutations (test_performance_queries.PerformanceQueries.test_cache_revision_invalidation_for_all_mutations) ... ok
+test_fast_reports_and_streaming_details_have_same_total (test_performance_queries.PerformanceQueries.test_fast_reports_and_streaming_details_have_same_total) ... ok
+test_no_complete_record_read_during_navigation (test_performance_queries.PerformanceQueries.test_no_complete_record_read_during_navigation) ... 2026-10-15 14:38:02.121 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_pagination_bounded_and_row_exact (test_performance_queries.PerformanceQueries.test_pagination_bounded_and_row_exact) ... ok
+test_preview_small_and_stream_rollback_on_failure (test_performance_queries.PerformanceQueries.test_preview_small_and_stream_rollback_on_failure) ... /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/openpyxl/styles/stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+ok
+test_sql_matches_saved_financial_rules_and_periods (test_performance_queries.PerformanceQueries.test_sql_matches_saved_financial_rules_and_periods) ... ok
+test_day (test_periods.PeriodTests.test_day) ... ok
+test_duplicates_are_identified_over_whole_month (test_periods.PeriodTests.test_duplicates_are_identified_over_whole_month) ... ok
+test_empty_period (test_periods.PeriodTests.test_empty_period) ... ok
+test_filter_does_not_mutate_or_recalculate (test_periods.PeriodTests.test_filter_does_not_mutate_or_recalculate) ... ok
+test_inclusive_interval (test_periods.PeriodTests.test_inclusive_interval) ... ok
+test_leap_and_year_boundaries (test_periods.PeriodTests.test_leap_and_year_boundaries) ... ok
+test_mapping_and_typed_dates (test_periods.PeriodTests.test_mapping_and_typed_dates) ... ok
+test_month_and_missing_invalid_dates (test_periods.PeriodTests.test_month_and_missing_invalid_dates) ... ok
+test_outside_reference_month (test_periods.PeriodTests.test_outside_reference_month) ... ok
+test_quantities_values_and_productivity_use_same_valid_rows (test_periods.PeriodTests.test_quantities_values_and_productivity_use_same_valid_rows) ... ok
+test_rankings_change_with_period (test_periods.PeriodTests.test_rankings_change_with_period) ... ok
+test_reversed_period (test_periods.PeriodTests.test_reversed_period) ... ok
+test_delete_restore_freeze_and_empty_month (test_reconciliation.ReconciliationTests.test_delete_restore_freeze_and_empty_month) ... ok
+test_exact_ids_and_financial_delta_read_only (test_reconciliation.ReconciliationTests.test_exact_ids_and_financial_delta_read_only) ... Auditando registros e seis regras, sem gravar na base…
+Conferindo integridade SQLite…
+ok
+test_month_is_accumulated_but_explicit_full_interval_is_dated (test_reconciliation.ReconciliationTests.test_month_is_accumulated_but_explicit_full_interval_is_dated) ... ok
+test_three_screens_match_audit_and_daily_does_not_include_undated (test_reconciliation.ReconciliationTests.test_three_screens_match_audit_and_daily_does_not_include_undated) ... 2026-10-15 14:38:05.888 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 14:38:06.325 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 14:38:06.775 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 79 tests in 47.559s
+
+OK

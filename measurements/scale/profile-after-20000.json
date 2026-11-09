@@ -1,0 +1,381 @@
+{
+  "rows": 20000,
+  "code": "/workspace/TESTE",
+  "synthetic": true,
+  "input_shape": "72 colunas; 23 preenchidas, 49 vazias; arquivos diários de 20.000 linhas",
+  "memory_method": "VmRSS amostrada a cada 20 ms; processo novo por cenário",
+  "excel_import": {
+    "seconds": 18.645562,
+    "peak_rss_mb": 72.66
+  },
+  "profile_import": [
+    {
+      "function": "('storage.py', 90, 'import_sheet')",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.078385,
+      "cumulative_seconds": 16.501149
+    },
+    {
+      "function": "('excel_io.py', 32, 'iter_records')",
+      "primitive_calls": 20001,
+      "calls": 20001,
+      "self_seconds": 0.332194,
+      "cumulative_seconds": 11.71274
+    },
+    {
+      "function": "('_read_only.py', 60, '_cells_by_row')",
+      "primitive_calls": 20019,
+      "calls": 20019,
+      "self_seconds": 0.029593,
+      "cumulative_seconds": 9.124002
+    },
+    {
+      "function": "('_reader.py', 125, 'parse')",
+      "primitive_calls": 20019,
+      "calls": 20019,
+      "self_seconds": 0.282741,
+      "cumulative_seconds": 9.039222
+    },
+    {
+      "function": "('_reader.py', 282, 'parse_row')",
+      "primitive_calls": 20017,
+      "calls": 20017,
+      "self_seconds": 0.145355,
+      "cumulative_seconds": 6.993384
+    },
+    {
+      "function": "('_reader.py', 189, 'parse_cell')",
+      "primitive_calls": 428952,
+      "calls": 428952,
+      "self_seconds": 0.826871,
+      "cumulative_seconds": 6.843272
+    },
+    {
+      "function": "('ElementTree.py', 1233, 'iterator')",
+      "primitive_calls": 3858242,
+      "calls": 3858245,
+      "self_seconds": 0.530605,
+      "cumulative_seconds": 4.779808
+    },
+    {
+      "function": "('serialisable.py', 46, 'from_tree')",
+      "primitive_calls": 408962,
+      "calls": 409172,
+      "self_seconds": 0.946862,
+      "cumulative_seconds": 4.561359
+    },
+    {
+      "function": "('excel.py', 316, 'load_workbook')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 1.3e-05,
+      "cumulative_seconds": 4.130655
+    },
+    {
+      "function": "('excel.py', 286, 'read')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 7.2e-05,
+      "cumulative_seconds": 4.129803
+    },
+    {
+      "function": "('excel.py', 212, 'read_worksheets')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 3.1e-05,
+      "cumulative_seconds": 4.118622
+    },
+    {
+      "function": "('_read_only.py', 35, '__init__')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 3.1e-05,
+      "cumulative_seconds": 4.118211
+    },
+    {
+      "function": "('_read_only.py', 46, '_get_size')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 3.1e-05,
+      "cumulative_seconds": 4.118179
+    },
+    {
+      "function": "('_reader.py', 172, 'parse_dimensions')",
+      "primitive_calls": 2,
+      "calls": 2,
+      "self_seconds": 0.691886,
+      "cumulative_seconds": 4.118045
+    },
+    {
+      "function": "('text.py', 161, '__init__')",
+      "primitive_calls": 408937,
+      "calls": 408937,
+      "self_seconds": 0.39003,
+      "cumulative_seconds": 2.744592
+    },
+    {
+      "function": "('ElementTree.py', 1278, 'feed')",
+      "primitive_calls": 4742,
+      "calls": 4742,
+      "self_seconds": 1.037204,
+      "cumulative_seconds": 2.376378
+    },
+    {
+      "function": "('storage.py', 119, 'insert_batch')",
+      "primitive_calls": 20,
+      "calls": 20,
+      "self_seconds": 8.1e-05,
+      "cumulative_seconds": 2.201317
+    },
+    {
+      "function": "('~', 0, \"<method 'executemany' of 'sqlite3.Connection' objects>\")",
+      "primitive_calls": 20,
+      "calls": 20,
+      "self_seconds": 0.810978,
+      "cumulative_seconds": 2.201236
+    },
+    {
+      "function": "('excel_io.py', 6, 'inspect')",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.000312,
+      "cumulative_seconds": 2.142607
+    },
+    {
+      "function": "('ElementTree.py', 1302, 'read_events')",
+      "primitive_calls": 3862988,
+      "calls": 3862988,
+      "self_seconds": 1.081704,
+      "cumulative_seconds": 1.711641
+    },
+    {
+      "function": "('core.py', 82, 'evaluate')",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.198048,
+      "cumulative_seconds": 1.611011
+    },
+    {
+      "function": "('~', 0, \"<method 'feed' of 'xml.etree.ElementTree.XMLParser' objects>\")",
+      "primitive_calls": 4742,
+      "calls": 4742,
+      "self_seconds": 1.339154,
+      "cumulative_seconds": 1.339154
+    },
+    {
+      "function": "('sequence.py', 24, '__set__')",
+      "primitive_calls": 817960,
+      "calls": 817960,
+      "self_seconds": 0.788324,
+      "cumulative_seconds": 1.053809
+    },
+    {
+      "function": "('nested.py', 26, '__set__')",
+      "primitive_calls": 409083,
+      "calls": 409083,
+      "self_seconds": 0.222237,
+      "cumulative_seconds": 0.940213
+    },
+    {
+      "function": "('__init__.py', 183, 'dumps')",
+      "primitive_calls": 80024,
+      "calls": 80024,
+      "self_seconds": 0.094308,
+      "cumulative_seconds": 0.855211
+    },
+    {
+      "function": "('holidays.py', 13, 'identity')",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.076476,
+      "cumulative_seconds": 0.802202
+    },
+    {
+      "function": "('text.py', 173, 'content')",
+      "primitive_calls": 408937,
+      "calls": 408937,
+      "self_seconds": 0.378874,
+      "cumulative_seconds": 0.792316
+    },
+    {
+      "function": "('~', 0, '<built-in method builtins.isinstance>')",
+      "primitive_calls": 8523768,
+      "calls": 8523768,
+      "self_seconds": 0.772846,
+      "cumulative_seconds": 0.772866
+    },
+    {
+      "function": "('encoder.py', 183, 'encode')",
+      "primitive_calls": 80024,
+      "calls": 80024,
+      "self_seconds": 0.08216,
+      "cumulative_seconds": 0.746375
+    },
+    {
+      "function": "('core.py', 27, 'norm')",
+      "primitive_calls": 199465,
+      "calls": 199465,
+      "self_seconds": 0.210578,
+      "cumulative_seconds": 0.711886
+    },
+    {
+      "function": "('core.py', 72, 'reading_month')",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.040459,
+      "cumulative_seconds": 0.686145
+    },
+    {
+      "function": "('base.py', 39, '__set__')",
+      "primitive_calls": 819170,
+      "calls": 819170,
+      "self_seconds": 0.463588,
+      "cumulative_seconds": 0.678058
+    },
+    {
+      "function": "('base.py', 68, '__set__')",
+      "primitive_calls": 409669,
+      "calls": 409669,
+      "self_seconds": 0.248184,
+      "cumulative_seconds": 0.673
+    },
+    {
+      "function": "('__init__.py', 299, 'loads')",
+      "primitive_calls": 80000,
+      "calls": 80000,
+      "self_seconds": 0.049753,
+      "cumulative_seconds": 0.653936
+    },
+    {
+      "function": "('encoder.py', 205, 'iterencode')",
+      "primitive_calls": 80024,
+      "calls": 80024,
+      "self_seconds": 0.632651,
+      "cumulative_seconds": 0.632651
+    },
+    {
+      "function": "('~', 0, '<built-in method strptime>')",
+      "primitive_calls": 60000,
+      "calls": 60000,
+      "self_seconds": 0.061989,
+      "cumulative_seconds": 0.609121
+    },
+    {
+      "function": "('perf_schema.py', 8, 'reading_day')",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.048391,
+      "cumulative_seconds": 0.587364
+    },
+    {
+      "function": "('decoder.py', 333, 'decode')",
+      "primitive_calls": 80000,
+      "calls": 80000,
+      "self_seconds": 0.083101,
+      "cumulative_seconds": 0.583894
+    },
+    {
+      "function": "('_strptime.py', 650, '_strptime_datetime')",
+      "primitive_calls": 60000,
+      "calls": 60000,
+      "self_seconds": 0.044658,
+      "cumulative_seconds": 0.545727
+    },
+    {
+      "function": "('functions.py', 77, 'localname')",
+      "primitive_calls": 409045,
+      "calls": 409045,
+      "self_seconds": 0.239663,
+      "cumulative_seconds": 0.529016
+    }
+  ],
+  "profile_warning": "Instrumentado: os tempos deste arquivo não entram na comparação antes/depois.",
+  "profile_memory_warning": "Importação instrumentada sem thread de amostragem: RSS apenas no início/fim; não usada na comparação de RAM.",
+  "financial": {
+    "2026-09": {
+      "units": {
+        "138": 8392,
+        "128": 8390,
+        "137": 1679,
+        "impressao": 30000,
+        "apontamento": 6667
+      },
+      "holiday_quantity": 0,
+      "total_cents": 4295389
+    }
+  },
+  "billing_all_months": {
+    "seconds": 0.038484,
+    "peak_rss_mb": 72.83
+  },
+  "financial_regression": {
+    "seconds": 0.61374,
+    "peak_rss_mb": 72.84
+  },
+  "sql_cold_month": {
+    "seconds": 0.037368,
+    "peak_rss_mb": 72.97
+  },
+  "filter_day": {
+    "seconds": 0.042999,
+    "peak_rss_mb": 72.97
+  },
+  "filter_interval": {
+    "seconds": 0.042376,
+    "peak_rss_mb": 72.97
+  },
+  "productivity": {
+    "seconds": 0.058619,
+    "peak_rss_mb": 74.2
+  },
+  "page_first": {
+    "seconds": 0.004796,
+    "peak_rss_mb": 74.21
+  },
+  "page_last": {
+    "seconds": 0.005574,
+    "peak_rss_mb": 74.21
+  },
+  "summary_excel": {
+    "seconds": 0.011709,
+    "peak_rss_mb": 74.46
+  },
+  "pdf": {
+    "seconds": 0.040368,
+    "peak_rss_mb": 74.5
+  },
+  "full_excel_bytes": 2791046,
+  "full_excel": {
+    "seconds": 5.658786,
+    "peak_rss_mb": 75.14
+  },
+  "delete_import": {
+    "seconds": 0.173726,
+    "peak_rss_mb": 75.48
+  },
+  "restore_import": {
+    "seconds": 0.209095,
+    "peak_rss_mb": 77.76
+  },
+  "screens": {
+    "Painel inicial": 0.05329,
+    "Importar planilhas": 0.115547,
+    "Fechamento mensal": 0.103607,
+    "Produtividade": 0.081621,
+    "Relatórios": 0.049146
+  },
+  "navigation": {
+    "seconds": 1.036786,
+    "peak_rss_mb": 203.85
+  },
+  "db_bytes": 91148288,
+  "sql_plan": [
+    [
+      4,
+      0,
+      49,
+      "SEARCH record_metrics USING INDEX metrics_month_day (month=? AND day>? AND day<?)"
+    ]
+  ]
+}

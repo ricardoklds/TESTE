@@ -1,0 +1,11 @@
+test_boundary_status_and_missing (test_inspections.Inspections.test_boundary_status_and_missing) ... ok
+test_exact_duplicates_rollback_and_pending_blocks_fine (test_inspections.Inspections.test_exact_duplicates_rollback_and_pending_blocks_fine) ... ok
+test_exact_target_no_penalty (test_inspections.Inspections.test_exact_target_no_penalty) ... ok
+test_import_aggregate_period_repeat_export_and_fine (test_inspections.Inspections.test_import_aggregate_period_repeat_export_and_fine) ... ok
+test_ui_no_automatic_penalty_or_export (test_inspections.Inspections.test_ui_no_automatic_penalty_or_export) ... 2026-10-15 22:07:21.940 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.705s
+
+OK

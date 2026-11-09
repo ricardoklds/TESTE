@@ -1,0 +1,44 @@
+{
+  "month": "2026-09",
+  "read_only": true,
+  "available": false,
+  "code_sha256": {
+    "app.py": "19b8ee0efa936c2f6616233661fda21ee30be268c2941418dff5f47b925baa8e",
+    "queries.py": "50846c13f50ae3a887f8735ec39d521b5d9c12be37f5cef6722a380be9055c10",
+    "periods.py": "07428f0ea2a17283a0dc2f67b520df973b8ac0559c7f7b8c82215b00dd231a98",
+    "auditoria_fechamento.py": "bcfc2953b7dc4a09de2ea3e78f10e63a0666e42daca3ed1dbd7a2b397006f583",
+    "holidays.py": "2d4ee7b0b79837a741aa0942649f01b1980e79a8dcfcafe2d5321dac782d9616"
+  },
+  "limits": [
+    "Não lê o cache em RAM da instalação Streamlit; compara SQL sem cache em uma transação consistente.",
+    "Não altera registros, projeções, regras, preços, calendário ou fechamento.",
+    "Os valores informados são referências, não resultados desta execução.",
+    "Mês ausente: não foi possível comprovar os registros ou o valor da divergência real."
+  ],
+  "reported": {
+    "audited_cents": 59690623,
+    "old_panel_cents": 59550945,
+    "difference_cents": 139678,
+    "holiday_quantity": 19951,
+    "holiday_cents": 2094855,
+    "audited_quantities": {
+      "138": 303350,
+      "137": 2680,
+      "128": 69161,
+      "feriado": 19951,
+      "impressao": 79466,
+      "apontamento": 50808
+    },
+    "old_panel_quantities": {
+      "138": 303203,
+      "137": 2680,
+      "128": 68972,
+      "feriado": 19951,
+      "impressao": 78546,
+      "apontamento": 49824
+    }
+  },
+  "available_months": [
+    "2026-10"
+  ]
+}

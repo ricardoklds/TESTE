@@ -1,0 +1,246 @@
+{
+  "original_sha256": "5c71eb3f941ae38d49b4afc8f612ad9da6b09cf0bc239a2d046f0bd47b410a58",
+  "before": {
+    "month": "2026-09",
+    "groups": [
+      {
+        "reason": "Excluído por classificação confirmada",
+        "code": null,
+        "quantity": 2,
+        "cents": 0
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014104",
+        "quantity": 561,
+        "cents": 673200
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014105",
+        "quantity": 1219,
+        "cents": 2742750
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014106",
+        "quantity": 2402,
+        "cents": 5404500
+      },
+      {
+        "reason": "Pendente: OS repetida",
+        "code": "200014105",
+        "quantity": 24,
+        "cents": 0
+      },
+      {
+        "reason": "Pendente: ligação inativa",
+        "code": null,
+        "quantity": 223,
+        "cents": 0
+      }
+    ],
+    "services": [
+      {
+        "code": "200014105",
+        "name": "Vistoria para aprovação de ligação",
+        "quantity": 1219,
+        "cents": 2742750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014106",
+        "name": "Vistoria predial",
+        "quantity": 2402,
+        "cents": 5404500,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014104",
+        "name": "Vistoria de atualização cadastral",
+        "quantity": 561,
+        "cents": 673200,
+        "unit_cents": 1200
+      }
+    ],
+    "rates": [
+      {
+        "code": "200014104",
+        "unit_cents": 1200,
+        "quantity": 561
+      },
+      {
+        "code": "200014105",
+        "unit_cents": 2250,
+        "quantity": 1219
+      },
+      {
+        "code": "200014106",
+        "unit_cents": 2250,
+        "quantity": 2402
+      }
+    ],
+    "pending": 247,
+    "undated": 0,
+    "ready": false,
+    "sync_pending": 0,
+    "geo": {
+      "quantity": 0,
+      "cents": 0,
+      "ready": false,
+      "reason": "Geolocalização não confirmada (zero deve ser informado explicitamente)."
+    },
+    "inspection_cents": 8820450,
+    "revision": 3,
+    "fingerprint": "3028ccbcf305d23b8aed07f617a42c51786af485b2ce1ed932aaccc2026e021a"
+  },
+  "after": {
+    "month": "2026-09",
+    "groups": [
+      {
+        "reason": "Excluído por classificação confirmada",
+        "code": null,
+        "quantity": 2,
+        "cents": 0
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014104",
+        "quantity": 284,
+        "cents": 340800
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014105",
+        "quantity": 1219,
+        "cents": 2742750
+      },
+      {
+        "reason": "Faturável",
+        "code": "200014106",
+        "quantity": 2679,
+        "cents": 6027750
+      },
+      {
+        "reason": "Pendente: OS repetida",
+        "code": "200014105",
+        "quantity": 24,
+        "cents": 0
+      },
+      {
+        "reason": "Pendente: ligação inativa",
+        "code": null,
+        "quantity": 223,
+        "cents": 0
+      }
+    ],
+    "services": [
+      {
+        "code": "200014105",
+        "name": "Vistoria para aprovação de ligação",
+        "quantity": 1219,
+        "cents": 2742750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014106",
+        "name": "Vistoria predial",
+        "quantity": 2679,
+        "cents": 6027750,
+        "unit_cents": 2250
+      },
+      {
+        "code": "200014104",
+        "name": "Vistoria de atualização cadastral",
+        "quantity": 284,
+        "cents": 340800,
+        "unit_cents": 1200
+      }
+    ],
+    "rates": [
+      {
+        "code": "200014104",
+        "unit_cents": 1200,
+        "quantity": 284
+      },
+      {
+        "code": "200014105",
+        "unit_cents": 2250,
+        "quantity": 1219
+      },
+      {
+        "code": "200014106",
+        "unit_cents": 2250,
+        "quantity": 2679
+      }
+    ],
+    "pending": 247,
+    "undated": 0,
+    "ready": false,
+    "sync_pending": 0,
+    "geo": {
+      "quantity": 0,
+      "cents": 0,
+      "ready": false,
+      "reason": "Geolocalização não confirmada (zero deve ser informado explicitamente)."
+    },
+    "inspection_cents": 9111300,
+    "revision": 4,
+    "fingerprint": "ee826f7a879919f5ec9c9c4c381e483ff7a5d71a4e699e2f436fc0a82a5ec51a"
+  },
+  "findings": {
+    "target_count": 277,
+    "target_causes": {
+      "VISTORIADO LOCAL EXECUÇÃO CONFIRMADA": 274,
+      "IMÓVEL FECHADO, ORDEM ENCERRADA": 1,
+      "TRATA-SE DE OUTRO SERVIÇO": 1,
+      "RESPONSABILIDADE DE OUTRA CONCESSIONÁRIA": 1
+    },
+    "target_status_os": {
+      "Fechada": 277
+    },
+    "target_status_operation": {
+      "Fechada": 277
+    },
+    "duplicate_occurrences": 24,
+    "inactive_count": 223,
+    "inactive_municipalities": {
+      "ARACOIABA DA SERRA": 161,
+      "MACATUBA": 62
+    },
+    "inactive_causes": {
+      "DEMOLIDO SEM ABASTECIMENTO NORMAL": 223
+    },
+    "duplicate_pairs": 12,
+    "duplicate_pair_findings": {
+      "Mesmo resultado em datas distintas; confirmar regra comercial de revisita.": 2,
+      "Resultados diferentes em ocorrências da mesma OS; não comprova duas cobranças.": 8,
+      "Diferença somente no horário de conclusão/tempo residual; possível correção, não comprovada.": 2
+    }
+  },
+  "comparison": {
+    "200014105": {
+      "calculated": 1219,
+      "reference": 1243,
+      "difference": -24
+    },
+    "200014106": {
+      "calculated": 2679,
+      "reference": 2679,
+      "difference": 0
+    },
+    "200014104": {
+      "calculated": 284,
+      "reference": 284,
+      "difference": 0
+    }
+  },
+  "independent_quantities": {
+    "200014106": 2679,
+    "200014104": 284,
+    "200014105": 1219
+  },
+  "independent_sql_identical": true,
+  "production_accessed": false,
+  "september_approved": false
+}

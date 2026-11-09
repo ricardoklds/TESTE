@@ -1,0 +1,15 @@
+{
+  "tests_passed": 113,
+  "tests_seconds": 42.087,
+  "focused_tests_passed": 8,
+  "focused_seconds": 0.738,
+  "schema_changed": false,
+  "readings_implementation_changed": false,
+  "production_accessed_by_diagnostics": false,
+  "real_inspection_excel_unchanged": true,
+  "september_approved": false,
+  "real_pending_count": 247,
+  "independent_sql_quantities_equal": true,
+  "synthetic_rows_benchmark": 100000,
+  "impact_rollback_bank_bytes_identical": true
+}

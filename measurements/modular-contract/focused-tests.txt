@@ -1,0 +1,16 @@
+test_all_modules_lazy_and_no_exports_on_open (test_modular_finance.ModularFinanceTests.test_all_modules_lazy_and_no_exports_on_open) ... 2026-10-15 23:37:04.538 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_ambiguous_rules_pending_inactive_service_and_new_service (test_modular_finance.ModularFinanceTests.test_ambiguous_rules_pending_inactive_service_and_new_service) ... ok
+test_consolidation_readonly_validation_and_deduction_unique (test_modular_finance.ModularFinanceTests.test_consolidation_readonly_validation_and_deduction_unique) ... ok
+test_duplicate_inactive_unknown_pending_and_individual_decision (test_modular_finance.ModularFinanceTests.test_duplicate_inactive_unknown_pending_and_individual_decision) ... ok
+test_geo_two_modes_reference_no_double_count_and_history (test_modular_finance.ModularFinanceTests.test_geo_two_modes_reference_no_double_count_and_history) ... ok
+test_import_incremental_projection_and_stale_approval (test_modular_finance.ModularFinanceTests.test_import_incremental_projection_and_stale_approval) ... ok
+test_independent_excel_calculation_and_exported_catalog (test_modular_finance.ModularFinanceTests.test_independent_excel_calculation_and_exported_catalog) ... ok
+test_original_classification_exclusions_competence_and_operational (test_modular_finance.ModularFinanceTests.test_original_classification_exclusions_competence_and_operational) ... ok
+test_prices_effectivity_freeze_import_block_and_backup (test_modular_finance.ModularFinanceTests.test_prices_effectivity_freeze_import_block_and_backup) ... ok
+test_real_readings_adapter_preserves_six_totals_and_bank (test_modular_finance.ModularFinanceTests.test_real_readings_adapter_preserves_six_totals_and_bank) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.726s
+
+OK

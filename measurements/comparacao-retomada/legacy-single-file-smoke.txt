@@ -1,0 +1,6 @@
+1/4 Somando os cinco serviços no banco, somente leitura
+2/4 Apurando IDs de feriado uma única vez (calendário/fechamento preservados)
+Feriados identificados: 0. Consulta de feriados concluída.
+3/4 e 4/4 Comparação agregada: usando as seis quantidades já salvas, sem ler Excel
+Comparação concluída em 0.03s.
+Comparação salva em /workspace/entrega/comparacao-outubro-legado-patch. Cálculo original preservado.

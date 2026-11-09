@@ -1,0 +1,117 @@
+{
+  "month": "2026-09",
+  "read_only": true,
+  "manual_records_not_provided": true,
+  "available": false,
+  "claimed_manual_cents": 59691043,
+  "claimed_app_cents": 59550945,
+  "claimed_difference_cents": 140098,
+  "claimed_missing_date_records": 1606,
+  "comparison": [
+    {
+      "Serviço": "138",
+      "Categoria": "Leitura com fatura impressa",
+      "Código": "200014094",
+      "Preço informado (centavos)": 138,
+      "Manual informado": 303350,
+      "Aplicativo informado": 303203,
+      "Diferença informada": 147,
+      "Diferença informada (centavos)": 20286,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 138,
+      "Valor auditado (centavos)": null
+    },
+    {
+      "Serviço": "128",
+      "Categoria": "Leitura sem fatura impressa",
+      "Código": "200014096",
+      "Preço informado (centavos)": 128,
+      "Manual informado": 69161,
+      "Aplicativo informado": 68972,
+      "Diferença informada": 189,
+      "Diferença informada (centavos)": 24192,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 128,
+      "Valor auditado (centavos)": null
+    },
+    {
+      "Serviço": "137",
+      "Categoria": "Leitura com causa preenchida",
+      "Código": "200014095",
+      "Preço informado (centavos)": 137,
+      "Manual informado": 2680,
+      "Aplicativo informado": 2680,
+      "Diferença informada": 0,
+      "Diferença informada (centavos)": 0,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 137,
+      "Valor auditado (centavos)": null
+    },
+    {
+      "Serviço": "impressao",
+      "Categoria": "Adicional de impressão",
+      "Código": "200014102",
+      "Preço informado (centavos)": 50,
+      "Manual informado": 79466,
+      "Aplicativo informado": 78546,
+      "Diferença informada": 920,
+      "Diferença informada (centavos)": 46000,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 50,
+      "Valor auditado (centavos)": null
+    },
+    {
+      "Serviço": "apontamento",
+      "Categoria": "Apontamento operacional",
+      "Código": "200014103",
+      "Preço informado (centavos)": 50,
+      "Manual informado": 50808,
+      "Aplicativo informado": 49824,
+      "Diferença informada": 984,
+      "Diferença informada (centavos)": 49200,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 50,
+      "Valor auditado (centavos)": null
+    },
+    {
+      "Serviço": "feriado",
+      "Categoria": "Adicional de leitura em feriado",
+      "Código": "200014097",
+      "Preço informado (centavos)": 105,
+      "Manual informado": 19955,
+      "Aplicativo informado": 19951,
+      "Diferença informada": 4,
+      "Diferença informada (centavos)": 420,
+      "Aplicativo auditado": null,
+      "Auditado menos aplicativo informado": null,
+      "Preço da base (centavos)": 105,
+      "Valor auditado (centavos)": null
+    }
+  ],
+  "proven": [
+    "As quantidades e preços informados somam exatamente os dois totais e a diferença de 140098 centavos.",
+    "A referência solicitada não existe nesse banco; fechamento real não foi auditado."
+  ],
+  "hypotheses": [
+    "Os 1606 registros podem ter causas de data distintas; não se pode atribuir a diferença a eles sem conferir a base.",
+    "Os quatro feriados de diferença não podem ser identificados individualmente sem a lista manual de fornecimento/data/execução."
+  ],
+  "imports": [],
+  "code_sha256": {
+    "auditoria_fechamento.py": "bcfc2953b7dc4a09de2ea3e78f10e63a0666e42daca3ed1dbd7a2b397006f583",
+    "core.py": "953d13af8b46639696a5c68018b08fa19b6d20d988ee45804691bbe9451dd2be",
+    "periods.py": "f9184220cc8e76e6943266d137b6307438e074959052fce4c14b857c82179983",
+    "holidays.py": "2d4ee7b0b79837a741aa0942649f01b1980e79a8dcfcafe2d5321dac782d9616",
+    "holiday_review.py": "bfefe8e1f179279542438bb6b6fb435a1074702fb13d1a2075b3d31ff140270a",
+    "localities.py": "761d558750f093188c4ef9e0e088b8d42e7fb5d1d07f529904ea45226243e9bc",
+    "municipal_review.py": "aeb167b49e28257fa0ad232ef21dfa42d26b6d920d92081002e844b924cd681e",
+    "reference_data/municipalities.json": "72e96f8c4044bdba30397231a7695a36c9f4134b984f954d5fd65b22675f1702",
+    "reference_data/municipal_confirmations.json": "d81137257bc074caf3f94bce3756f234f4752aadbd65cbf32a25be2405d957f6"
+  },
+  "sqlite_integrity_check": "ok"
+}

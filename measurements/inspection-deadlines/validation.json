@@ -1,0 +1,12 @@
+{
+  "tests_passed": 95,
+  "tests_seconds": 46.814,
+  "production_schema_migration": false,
+  "billing_logic_files_changed": false,
+  "independent_excel_check": {
+    "inside": 4159,
+    "outside": 272
+  },
+  "scope_requires_import_confirmation": true,
+  "official_financial_posting": false
+}

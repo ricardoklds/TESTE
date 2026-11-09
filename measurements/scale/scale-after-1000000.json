@@ -1,0 +1,108 @@
+{
+  "rows": 1000000,
+  "code": "/workspace/TESTE",
+  "synthetic": true,
+  "input_shape": "72 colunas; 23 preenchidas, 49 vazias; arquivos diários de 20.000 linhas",
+  "memory_method": "VmRSS amostrada a cada 20 ms; processo novo por cenário",
+  "excel_import": {
+    "seconds": 402.913693,
+    "peak_rss_mb": 76.53
+  },
+  "financial": {
+    "2026-09": {
+      "units": {
+        "138": 251748,
+        "128": 251748,
+        "137": 50350,
+        "impressao": 900000,
+        "apontamento": 200000
+      },
+      "holiday_quantity": 23497,
+      "total_cents": 131330103
+    },
+    "2026-10": {
+      "units": {
+        "138": 167832,
+        "128": 167832,
+        "137": 33566,
+        "impressao": 600000,
+        "apontamento": 133334
+      },
+      "holiday_quantity": 13426,
+      "total_cents": 87318284
+    }
+  },
+  "billing_all_months": {
+    "seconds": 2.314871,
+    "peak_rss_mb": 76.99
+  },
+  "financial_regression": {
+    "seconds": 32.331941,
+    "peak_rss_mb": 77.0
+  },
+  "sql_cold_month": {
+    "seconds": 0.821787,
+    "peak_rss_mb": 77.0
+  },
+  "filter_day": {
+    "seconds": 0.092016,
+    "peak_rss_mb": 77.0
+  },
+  "filter_interval": {
+    "seconds": 0.730973,
+    "peak_rss_mb": 77.0
+  },
+  "productivity": {
+    "seconds": 1.458979,
+    "peak_rss_mb": 77.01
+  },
+  "page_first": {
+    "seconds": 0.037751,
+    "peak_rss_mb": 77.02
+  },
+  "page_last": {
+    "seconds": 0.086196,
+    "peak_rss_mb": 77.02
+  },
+  "summary_excel": {
+    "seconds": 0.013324,
+    "peak_rss_mb": 77.26
+  },
+  "pdf": {
+    "seconds": 0.039933,
+    "peak_rss_mb": 77.3
+  },
+  "full_excel_bytes": 57133802,
+  "full_excel": {
+    "seconds": 113.337084,
+    "peak_rss_mb": 86.42
+  },
+  "delete_import": {
+    "seconds": 1.719239,
+    "peak_rss_mb": 80.53
+  },
+  "restore_import": {
+    "seconds": 1.653277,
+    "peak_rss_mb": 80.77
+  },
+  "screens": {
+    "Painel inicial": 0.056034,
+    "Importar planilhas": 1.276116,
+    "Fechamento mensal": 1.09647,
+    "Produtividade": 0.522248,
+    "Relatórios": 0.050125
+  },
+  "navigation": {
+    "seconds": 4.58763,
+    "peak_rss_mb": 205.77
+  },
+  "db_bytes": 4572835840,
+  "sql_plan": [
+    [
+      4,
+      0,
+      49,
+      "SEARCH record_metrics USING INDEX metrics_month_day (month=? AND day>? AND day<?)"
+    ]
+  ]
+}

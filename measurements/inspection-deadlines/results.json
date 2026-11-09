@@ -1,0 +1,39 @@
+{
+  "real_excel_import_seconds": 0.7038917900063097,
+  "real_excel": {
+    "count": 4431,
+    "total": {
+      "total": 4431,
+      "inside": 4159,
+      "outside": 272,
+      "percent": 93.86143082825548,
+      "outside_percent": 6.138569171744527,
+      "met": false
+    },
+    "municipalities": 33,
+    "pending": 0
+  },
+  "synthetic_insert_seconds": 1.8452104160096496,
+  "synthetic_500k": {
+    "summary_seconds": [
+      0.18082774701179005,
+      0.1826615629834123,
+      0.23640615798649378
+    ],
+    "total": {
+      "total": 500000,
+      "inside": 495000,
+      "outside": 5000,
+      "percent": 99.0,
+      "outside_percent": 1.0,
+      "met": true
+    },
+    "municipalities": 100
+  },
+  "synthetic_detail_export": {
+    "seconds": 0.31654959797742777,
+    "bytes": 7432,
+    "late_records": 5000
+  },
+  "ui_empty": "AppTest: Vistorias abre, sem exceção, card e controles presentes"
+}

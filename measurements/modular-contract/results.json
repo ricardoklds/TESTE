@@ -1,0 +1,58 @@
+{
+  "synthetic": true,
+  "reading_rows": 500000,
+  "visit_rows": 100000,
+  "sync_with_initial_backup_seconds": 1.4790736059949268,
+  "before": {
+    "readings_panel_month_first_seconds": 5.20441271198797,
+    "readings_panel_cached_seconds": [
+      0.0684484480007086,
+      0.06562854500953108,
+      0.06433707600808702
+    ],
+    "readings_total": "R$ 1.439.999,45",
+    "holiday_value": "R$ 24.999,45",
+    "deadline_aggregate_seconds": 0.04393868401530199,
+    "operational_total": {
+      "total": 100000,
+      "inside": 99000,
+      "outside": 1000,
+      "percent": 99.0,
+      "outside_percent": 1.0,
+      "met": true
+    },
+    "deadline_navigation_seconds": 0.0912182480096817
+  },
+  "after": {
+    "readings_panel_month_first_seconds": 5.051699535979424,
+    "readings_panel_cached_seconds": [
+      0.019529760000295937,
+      0.016463464009575546,
+      0.019900560000678524
+    ],
+    "readings_total": "R$ 1.439.999,45",
+    "holiday_value": "R$ 24.999,45",
+    "deadline_aggregate_seconds": 0.03468727399013005,
+    "operational_total": {
+      "total": 100000,
+      "inside": 99000,
+      "outside": 1000,
+      "percent": 99.0,
+      "outside_percent": 1.0,
+      "met": true
+    },
+    "inspection_module_entry_financial_panel_seconds": 0.5710036780219525,
+    "deadline_navigation_seconds": 0.04619166802149266,
+    "inspection_financial_aggregate_seconds": 0.5431318940245546,
+    "inspection_cents": 120000000,
+    "inspection_pending": 0,
+    "inspection_financial_panel_revisit_seconds": 0.04262336599640548,
+    "inspection_financial_panel_cached_seconds": 0.040898814011598006,
+    "general_panel_first_seconds": 1.0289835720031988,
+    "general_panel_cached_seconds": 0.00800389499636367
+  },
+  "six_reading_quantities_identical": true,
+  "readings_bank_sha256_unchanged": true,
+  "production_accessed": false,
+  "limits": "SQL fixtures. AppTest mede servidor, não navegador/rede. Três amostras cacheadas de Leituras. Prazo mede a seleção da página; a entrada no módulo financeiro é medida separadamente após a mudança. Não é ensaio de importação Excel de 500 mil registros nem validação real de setembro."
+}

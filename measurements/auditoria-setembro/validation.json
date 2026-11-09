@@ -1,0 +1,10 @@
+{
+  "tests_passed": 65,
+  "production_files_byte_identical": true,
+  "production_files_checked": 7,
+  "september_real_database_available": false,
+  "arithmetic_difference_cents": 140098,
+  "six_rules_modified": false,
+  "ui_filters_added": false,
+  "schema_migration_added": false
+}

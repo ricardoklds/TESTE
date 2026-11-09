@@ -1,0 +1,19 @@
+{
+  "synthetic": true,
+  "differences_cents": {
+    "before_geo": {
+      "Leituras": 0,
+      "Vistorias": 0,
+      "Geolocaliza\u00e7\u00e3o": 0,
+      "Bruto": 0
+    },
+    "after_geo": {
+      "Leituras": 0,
+      "Vistorias": 0,
+      "Geolocaliza\u00e7\u00e3o": 0,
+      "Bruto": 0
+    }
+  },
+  "six_reading_quantities_identical": true,
+  "no_production_access": true
+}

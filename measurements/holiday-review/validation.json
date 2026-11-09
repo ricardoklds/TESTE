@@ -1,0 +1,7 @@
+{
+  "regression_tests_passed": 53,
+  "production_files_byte_identical": true,
+  "production_files_checked": 7,
+  "schema_migration_added": false,
+  "september_user_totals_not_reproduced_without_user_database": true
+}

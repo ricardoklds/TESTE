@@ -1,0 +1,97 @@
+{
+  "rows": 20000,
+  "code": "/tmp/sabesp-before",
+  "synthetic": true,
+  "input_shape": "72 colunas; 23 preenchidas, 49 vazias; arquivos diários de 20.000 linhas",
+  "memory_method": "VmRSS amostrada a cada 20 ms; processo novo por cenário",
+  "excel_import": {
+    "seconds": 8.550832,
+    "peak_rss_mb": 71.99
+  },
+  "financial": {
+    "2026-09": {
+      "units": {
+        "138": 8392,
+        "128": 8390,
+        "137": 1679,
+        "impressao": 30000,
+        "apontamento": 6667
+      },
+      "holiday_quantity": 0,
+      "total_cents": 4295389
+    }
+  },
+  "billing_all_months": {
+    "seconds": 0.036932,
+    "peak_rss_mb": 72.13
+  },
+  "financial_regression": {
+    "seconds": 0.597315,
+    "peak_rss_mb": 72.13
+  },
+  "sql_cold_month": {
+    "seconds": 0.035337,
+    "peak_rss_mb": 72.68
+  },
+  "filter_day": {
+    "seconds": 0.040203,
+    "peak_rss_mb": 72.68
+  },
+  "filter_interval": {
+    "seconds": 0.039735,
+    "peak_rss_mb": 72.68
+  },
+  "productivity": {
+    "seconds": 0.055166,
+    "peak_rss_mb": 73.89
+  },
+  "page_first": {
+    "seconds": 0.005033,
+    "peak_rss_mb": 73.89
+  },
+  "page_last": {
+    "seconds": 0.005816,
+    "peak_rss_mb": 71.68
+  },
+  "summary_excel": {
+    "seconds": 0.012969,
+    "peak_rss_mb": 71.92
+  },
+  "pdf": {
+    "seconds": 0.038709,
+    "peak_rss_mb": 71.96
+  },
+  "full_excel_bytes": 2791043,
+  "full_excel": {
+    "seconds": 8.384473,
+    "peak_rss_mb": 74.7
+  },
+  "delete_import": {
+    "seconds": 0.181087,
+    "peak_rss_mb": 75.05
+  },
+  "restore_import": {
+    "seconds": 0.207124,
+    "peak_rss_mb": 77.32
+  },
+  "screens": {
+    "Painel inicial": 0.054753,
+    "Importar planilhas": 0.084714,
+    "Fechamento mensal": 0.100804,
+    "Produtividade": 0.078508,
+    "Relatórios": 0.077719
+  },
+  "navigation": {
+    "seconds": 1.0117,
+    "peak_rss_mb": 201.73
+  },
+  "db_bytes": 91148288,
+  "sql_plan": [
+    [
+      4,
+      0,
+      49,
+      "SEARCH record_metrics USING INDEX metrics_month_day (month=? AND day>? AND day<?)"
+    ]
+  ]
+}

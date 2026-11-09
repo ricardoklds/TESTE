@@ -1,0 +1,3 @@
+-r requirements.txt
+# Somente para conferir o texto dos PDFs nos testes; não é usado pelo aplicativo.
+pypdf==6.10.0

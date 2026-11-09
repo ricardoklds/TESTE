@@ -1,0 +1,34 @@
+{
+  "synthetic": true,
+  "rows": 500000,
+  "employees": 60,
+  "detail_combinations": 6000,
+  "option_counts": {
+    "city": 5,
+    "group": 20,
+    "employee": 60
+  },
+  "times": {
+    "overview_seconds": 0.515427763981279,
+    "options_seconds": 0.5642107060120907,
+    "employee_top50_seconds": 0.6683588729938492,
+    "detail_page100_seconds": 1.0583355409908108,
+    "combined_filter_seconds": 0.5203904509835411,
+    "dated_period_seconds": 0.16026859800331295,
+    "excel_all_aggregates_seconds": 3.8721212269738317,
+    "pdf_summary_seconds": 0.1524848050030414,
+    "cached_dashboard_seconds": 0.0008681299805175513
+  },
+  "six_quantities_match_fixture": true,
+  "partition_totals_match": {
+    "city": true,
+    "group": true,
+    "employee": true
+  },
+  "test_bank_unchanged": true,
+  "production_accessed": false,
+  "normal_cents": 141500000,
+  "holiday_cents": 2499945,
+  "total_cents": 143999945,
+  "limits": "Consultas SQL, agregados, exportação gerencial e chamadas cacheadas. Não mede rede, importação, Excel originais ou renderização no navegador."
+}

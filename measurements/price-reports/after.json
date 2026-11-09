@@ -1,0 +1,419 @@
+{
+  "readings_cached_seconds": [
+    0.02186774997971952,
+    0.018523125996580347,
+    0.02063154597999528
+  ],
+  "closing_cached_seconds": [
+    0.011061725992476568,
+    0.009368952014483511,
+    0.009462102985708043
+  ],
+  "simulation_seconds": [
+    0.011744226008886471,
+    0.011349702021107078,
+    0.011605838022660464,
+    0.00992196801234968
+  ],
+  "readings_total": "R$ 1.439.999,45",
+  "holiday_total": "R$ 24.999,45",
+  "visits_first_navigation_seconds": 1.5728640930028632,
+  "return_readings_seconds": 0.02026711401413195,
+  "closing_first_seconds": 2.2007024560007267,
+  "closing_uncached_seconds": [
+    2.0060227180074435,
+    2.072194941021735,
+    2.0124562490091193
+  ],
+  "pdf_seconds": 0.010834815009729937,
+  "pdf_bytes": 4320,
+  "excel_seconds": 0.011141066992422566,
+  "excel_bytes": 9305,
+  "ui_both_exports_seconds": 0.08074613098870032,
+  "composition_rows": 10,
+  "composition_total_equals_gross": true,
+  "simulation_banks_unchanged": true,
+  "before_geo": {
+    "month": "2026-09",
+    "readings": {
+      "services": [
+        {
+          "code": "200014094",
+          "name": "Leitura com fatura impressa",
+          "quantity": 250000,
+          "unit_cents": 138,
+          "cents": 34500000
+        },
+        {
+          "code": "200014096",
+          "name": "Leitura sem fatura impressa",
+          "quantity": 250000,
+          "unit_cents": 128,
+          "cents": 32000000
+        },
+        {
+          "code": "200014095",
+          "name": "Leitura com causa preenchida",
+          "quantity": 0,
+          "unit_cents": 137,
+          "cents": 0
+        },
+        {
+          "code": "200014102",
+          "name": "Adicional de impressão",
+          "quantity": 1000000,
+          "unit_cents": 50,
+          "cents": 50000000
+        },
+        {
+          "code": "200014103",
+          "name": "Apontamento operacional",
+          "quantity": 500000,
+          "unit_cents": 50,
+          "cents": 25000000
+        },
+        {
+          "code": "200014097",
+          "name": "Adicional de leitura em feriado",
+          "quantity": 23809,
+          "unit_cents": 105,
+          "cents": 2499945
+        }
+      ],
+      "cents": 143999945,
+      "closed": false,
+      "revision": 2,
+      "holiday_quantity": 23809,
+      "units": {
+        "138": 250000,
+        "128": 250000,
+        "137": 0,
+        "impressao": 1000000,
+        "apontamento": 500000,
+        "feriado": 23809
+      }
+    },
+    "visits": {
+      "month": "2026-09",
+      "groups": [
+        {
+          "reason": "Faturável",
+          "code": "200014104",
+          "quantity": 50000,
+          "cents": 60000000
+        },
+        {
+          "reason": "Faturável",
+          "code": "200014105",
+          "quantity": 50000,
+          "cents": 112500000
+        }
+      ],
+      "municipalities": [
+        {
+          "municipality": "BOCAINA",
+          "operational_count": 100000,
+          "billed_count": 100000,
+          "cents": 172500000,
+          "pending": 0
+        }
+      ],
+      "policy": {
+        "allowed": [
+          "AGUDOS",
+          "ALAMBARI",
+          "ALUMINIO",
+          "ANHEMBI",
+          "ARACARIGUAMA",
+          "AREALVA",
+          "AREIOPOLIS",
+          "BOCAINA",
+          "BOFETE",
+          "BOITUVA",
+          "BORACEIA",
+          "BOTUCATU",
+          "CAPELA DO ALTO",
+          "CESARIO LANGE",
+          "CONCHAS",
+          "DOURADO",
+          "IBIUNA",
+          "IPERO",
+          "LARANJAL PAULISTA",
+          "PEDERNEIRAS",
+          "PEREIRAS",
+          "PIEDADE",
+          "PORANGABA",
+          "QUADRA",
+          "SALTO DE PIRAPORA",
+          "SAO MANUEL",
+          "SAO ROQUE",
+          "SARAPUI",
+          "TATUI",
+          "TORRE DE PEDRA",
+          "TORRINHA"
+        ],
+        "excluded": [
+          "ARACOIABA DA SERRA",
+          "MACATUBA"
+        ],
+        "modes": {
+          "200014105": "once",
+          "200014106": "manual",
+          "200014104": "manual"
+        },
+        "legacy": false,
+        "effective": "2026-09"
+      },
+      "services": [
+        {
+          "code": "200014105",
+          "name": "Vistoria para aprovação de ligação",
+          "quantity": 50000,
+          "cents": 112500000,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014106",
+          "name": "Vistoria predial",
+          "quantity": 0,
+          "cents": 0,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014104",
+          "name": "Vistoria de atualização cadastral",
+          "quantity": 50000,
+          "cents": 60000000,
+          "unit_cents": 1200
+        }
+      ],
+      "rates": [
+        {
+          "code": "200014104",
+          "unit_cents": 1200,
+          "quantity": 50000
+        },
+        {
+          "code": "200014105",
+          "unit_cents": 2250,
+          "quantity": 50000
+        }
+      ],
+      "pending": 0,
+      "undated": 0,
+      "ready": true,
+      "sync_pending": 0,
+      "geo": {
+        "quantity": 10,
+        "unit_cents": 1200,
+        "cents": 12000,
+        "ready": true,
+        "mode": "Total mensal",
+        "cities_total": null,
+        "reference_total": 10,
+        "out_of_scope_quantity": 0,
+        "unknown_municipalities": {},
+        "reason": ""
+      },
+      "inspection_cents": 172500000,
+      "revision": 4,
+      "fingerprint": "cd17b457cb4571fee46126cd12324c8a1766d450303448f2d8dc5785ebe1879a",
+      "approved": false
+    },
+    "gross_cents": 316511945,
+    "ready": false
+  },
+  "geo_entry_seconds": 0.007412420003674924,
+  "geo_save_seconds": 0.009606249979697168,
+  "after_geo": {
+    "month": "2026-09",
+    "readings": {
+      "services": [
+        {
+          "code": "200014094",
+          "name": "Leitura com fatura impressa",
+          "quantity": 250000,
+          "unit_cents": 138,
+          "cents": 34500000
+        },
+        {
+          "code": "200014096",
+          "name": "Leitura sem fatura impressa",
+          "quantity": 250000,
+          "unit_cents": 128,
+          "cents": 32000000
+        },
+        {
+          "code": "200014095",
+          "name": "Leitura com causa preenchida",
+          "quantity": 0,
+          "unit_cents": 137,
+          "cents": 0
+        },
+        {
+          "code": "200014102",
+          "name": "Adicional de impressão",
+          "quantity": 1000000,
+          "unit_cents": 50,
+          "cents": 50000000
+        },
+        {
+          "code": "200014103",
+          "name": "Apontamento operacional",
+          "quantity": 500000,
+          "unit_cents": 50,
+          "cents": 25000000
+        },
+        {
+          "code": "200014097",
+          "name": "Adicional de leitura em feriado",
+          "quantity": 23809,
+          "unit_cents": 105,
+          "cents": 2499945
+        }
+      ],
+      "cents": 143999945,
+      "closed": false,
+      "revision": 2,
+      "holiday_quantity": 23809,
+      "units": {
+        "138": 250000,
+        "128": 250000,
+        "137": 0,
+        "impressao": 1000000,
+        "apontamento": 500000,
+        "feriado": 23809
+      }
+    },
+    "visits": {
+      "month": "2026-09",
+      "groups": [
+        {
+          "reason": "Faturável",
+          "code": "200014104",
+          "quantity": 50000,
+          "cents": 60000000
+        },
+        {
+          "reason": "Faturável",
+          "code": "200014105",
+          "quantity": 50000,
+          "cents": 112500000
+        }
+      ],
+      "municipalities": [
+        {
+          "municipality": "BOCAINA",
+          "operational_count": 100000,
+          "billed_count": 100000,
+          "cents": 172500000,
+          "pending": 0
+        }
+      ],
+      "policy": {
+        "allowed": [
+          "AGUDOS",
+          "ALAMBARI",
+          "ALUMINIO",
+          "ANHEMBI",
+          "ARACARIGUAMA",
+          "AREALVA",
+          "AREIOPOLIS",
+          "BOCAINA",
+          "BOFETE",
+          "BOITUVA",
+          "BORACEIA",
+          "BOTUCATU",
+          "CAPELA DO ALTO",
+          "CESARIO LANGE",
+          "CONCHAS",
+          "DOURADO",
+          "IBIUNA",
+          "IPERO",
+          "LARANJAL PAULISTA",
+          "PEDERNEIRAS",
+          "PEREIRAS",
+          "PIEDADE",
+          "PORANGABA",
+          "QUADRA",
+          "SALTO DE PIRAPORA",
+          "SAO MANUEL",
+          "SAO ROQUE",
+          "SARAPUI",
+          "TATUI",
+          "TORRE DE PEDRA",
+          "TORRINHA"
+        ],
+        "excluded": [
+          "ARACOIABA DA SERRA",
+          "MACATUBA"
+        ],
+        "modes": {
+          "200014105": "once",
+          "200014106": "manual",
+          "200014104": "manual"
+        },
+        "legacy": false,
+        "effective": "2026-09"
+      },
+      "services": [
+        {
+          "code": "200014105",
+          "name": "Vistoria para aprovação de ligação",
+          "quantity": 50000,
+          "cents": 112500000,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014106",
+          "name": "Vistoria predial",
+          "quantity": 0,
+          "cents": 0,
+          "unit_cents": 2250
+        },
+        {
+          "code": "200014104",
+          "name": "Vistoria de atualização cadastral",
+          "quantity": 50000,
+          "cents": 60000000,
+          "unit_cents": 1200
+        }
+      ],
+      "rates": [
+        {
+          "code": "200014104",
+          "unit_cents": 1200,
+          "quantity": 50000
+        },
+        {
+          "code": "200014105",
+          "unit_cents": 2250,
+          "quantity": 50000
+        }
+      ],
+      "pending": 0,
+      "undated": 0,
+      "ready": true,
+      "sync_pending": 0,
+      "geo": {
+        "quantity": 7,
+        "unit_cents": 1200,
+        "cents": 8400,
+        "ready": true,
+        "mode": "Total mensal",
+        "cities_total": null,
+        "reference_total": 7,
+        "out_of_scope_quantity": 0,
+        "unknown_municipalities": {},
+        "reason": ""
+      },
+      "inspection_cents": 172500000,
+      "revision": 5,
+      "fingerprint": "cb3326e695a18bac73b4c83334719ecd5ce2774ff95e8aaf0c6324a0def70e4b",
+      "approved": false
+    },
+    "gross_cents": 316508345,
+    "ready": false
+  },
+  "peak_rss_mib": 886.19140625
+}

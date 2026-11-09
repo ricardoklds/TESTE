@@ -1,0 +1,97 @@
+{
+  "rows": 500000,
+  "code": "/tmp/sabesp-before",
+  "synthetic": true,
+  "input_shape": "72 colunas; 23 preenchidas, 49 vazias; arquivos diários de 20.000 linhas",
+  "memory_method": "VmRSS amostrada a cada 20 ms; processo novo por cenário",
+  "excel_import": {
+    "seconds": 223.361436,
+    "peak_rss_mb": 75.57
+  },
+  "financial": {
+    "2026-09": {
+      "units": {
+        "138": 209790,
+        "128": 209790,
+        "137": 41958,
+        "impressao": 750000,
+        "apontamento": 166667
+      },
+      "holiday_quantity": 23497,
+      "total_cents": 109852921
+    }
+  },
+  "billing_all_months": {
+    "seconds": 1.166026,
+    "peak_rss_mb": 75.74
+  },
+  "financial_regression": {
+    "seconds": 15.779548,
+    "peak_rss_mb": 75.74
+  },
+  "sql_cold_month": {
+    "seconds": 1.177908,
+    "peak_rss_mb": 76.46
+  },
+  "filter_day": {
+    "seconds": 0.108264,
+    "peak_rss_mb": 76.46
+  },
+  "filter_interval": {
+    "seconds": 0.888199,
+    "peak_rss_mb": 76.46
+  },
+  "productivity": {
+    "seconds": 1.75982,
+    "peak_rss_mb": 78.1
+  },
+  "page_first": {
+    "seconds": 0.045852,
+    "peak_rss_mb": 78.11
+  },
+  "page_last": {
+    "seconds": 0.094367,
+    "peak_rss_mb": 78.11
+  },
+  "summary_excel": {
+    "seconds": 0.01513,
+    "peak_rss_mb": 78.35
+  },
+  "pdf": {
+    "seconds": 0.039131,
+    "peak_rss_mb": 78.39
+  },
+  "full_excel_bytes": 71378983,
+  "full_excel": {
+    "seconds": 214.560611,
+    "peak_rss_mb": 97.28
+  },
+  "delete_import": {
+    "seconds": 3.933503,
+    "peak_rss_mb": 81.42
+  },
+  "restore_import": {
+    "seconds": 2.357155,
+    "peak_rss_mb": 82.86
+  },
+  "screens": {
+    "Painel inicial": 0.067344,
+    "Importar planilhas": 27.61688,
+    "Fechamento mensal": 1.531931,
+    "Produtividade": 0.680934,
+    "Relatórios": 0.051639
+  },
+  "navigation": {
+    "seconds": 32.220065,
+    "peak_rss_mb": 205.83
+  },
+  "db_bytes": 2286231552,
+  "sql_plan": [
+    [
+      4,
+      0,
+      49,
+      "SEARCH record_metrics USING INDEX metrics_month_day (month=? AND day>? AND day<?)"
+    ]
+  ]
+}

@@ -1,0 +1,14 @@
+test_catalog_correction_old_install_is_explicit (test_catalog_changes.CatalogChanges.test_catalog_correction_old_install_is_explicit) ... ok
+test_future_rates_and_impact_cover_only_affected_open_months (test_catalog_changes.CatalogChanges.test_future_rates_and_impact_cover_only_affected_open_months) ... ok
+test_pending_unknown_excluded_new_tss_and_historical_freeze (test_catalog_changes.CatalogChanges.test_pending_unknown_excluded_new_tss_and_historical_freeze) ... ok
+test_preview_rollback_and_explicit_confirmation (test_catalog_changes.CatalogChanges.test_preview_rollback_and_explicit_confirmation) ... ok
+test_service_price_impact_and_stale_plan (test_catalog_changes.CatalogChanges.test_service_price_impact_and_stale_plan) ... ok
+test_specific_price_does_not_change_other_tss_and_independent (test_catalog_changes.CatalogChanges.test_specific_price_does_not_change_other_tss_and_independent) ... ok
+test_ui_two_phase_change (test_catalog_changes.CatalogChanges.test_ui_two_phase_change) ... 2026-10-16 11:01:37.036 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_unit_price_expiry_and_month_effectivity (test_catalog_changes.CatalogChanges.test_unit_price_expiry_and_month_effectivity) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.973s
+
+OK

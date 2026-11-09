@@ -1,0 +1,8 @@
+{
+  "legacy_full_excel_parse": 9.971,
+  "small_excel_preview": 0.037,
+  "streamed_excel_import": 14.278,
+  "complete_excel_background_worker": 11.753,
+  "records": 19668,
+  "total_cents": 3045412
+}

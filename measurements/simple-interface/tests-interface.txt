@@ -1,0 +1,27 @@
+2026-10-16 11:03:19.314 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 11:03:19.314 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 11:03:19.314 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 11:03:19.314 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 11:03:19.315 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 11:03:19.315 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+test_existing_definitive_deduction_is_separate_and_preserved (test_simple_interface.SimpleInterface.test_existing_definitive_deduction_is_separate_and_preserved) ... 2026-10-16 11:03:19.354 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_general_report_official_currency_does_not_include_simulation (test_simple_interface.SimpleInterface.test_general_report_official_currency_does_not_include_simulation) ... 2026-10-16 11:03:19.627 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_geo_save_without_document_live_total_and_no_double_count (test_simple_interface.SimpleInterface.test_geo_save_without_document_live_total_and_no_double_count) ... 2026-10-16 11:03:19.731 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_geo_secondary_city_scope_switch_and_history (test_simple_interface.SimpleInterface.test_geo_secondary_city_scope_switch_and_history) ... 2026-10-16 11:03:19.834 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_geo_validations_prices_effectivity_and_approved_lock (test_simple_interface.SimpleInterface.test_geo_validations_prices_effectivity_and_approved_lock) ... 2026-10-16 11:03:19.963 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 11:03:20.054 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_menu_structure_no_module_selector_and_all_routes (test_simple_interface.SimpleInterface.test_menu_structure_no_module_selector_and_all_routes) ... 2026-10-16 11:03:20.109 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_simulation_exact_rounding_and_off (test_simple_interface.SimpleInterface.test_simulation_exact_rounding_and_off) ... ok
+test_toggle_never_writes_or_recalculates_financial_results (test_simple_interface.SimpleInterface.test_toggle_never_writes_or_recalculates_financial_results) ... 2026-10-16 11:03:20.375 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.154s
+
+OK

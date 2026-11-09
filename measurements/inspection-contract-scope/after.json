@@ -1,0 +1,50 @@
+{
+  "projection_with_backup_seconds": 2.2538990189787,
+  "summary_seconds": [
+    1.4924847410002258,
+    1.5098553419811651,
+    1.5084245670004748
+  ],
+  "inspection_cents": 172500000,
+  "services": [
+    {
+      "code": "200014105",
+      "name": "Vistoria para aprova\u00e7\u00e3o de liga\u00e7\u00e3o",
+      "quantity": 50000,
+      "cents": 112500000,
+      "unit_cents": 2250
+    },
+    {
+      "code": "200014106",
+      "name": "Vistoria predial",
+      "quantity": 0,
+      "cents": 0,
+      "unit_cents": 2250
+    },
+    {
+      "code": "200014104",
+      "name": "Vistoria de atualiza\u00e7\u00e3o cadastral",
+      "quantity": 50000,
+      "cents": 60000000,
+      "unit_cents": 1200
+    }
+  ],
+  "pending": 0,
+  "page_50000_seconds": 1.4741856530017685,
+  "deadline_seconds": 0.03404123699874617,
+  "operational_total": 100000,
+  "readings_total": "R$ 1.439.999,45",
+  "holiday_value": "R$ 24.999,45",
+  "readings_cached_seconds": [
+    0.0208344720012974,
+    0.01679304600111209,
+    0.017254747013794258
+  ],
+  "visits_first_navigation_seconds": 1.661822177004069,
+  "visits_cached_seconds": 0.043193106015678495,
+  "deadline_navigation_seconds": 0.0695356990036089,
+  "return_readings_seconds": 0.018607703008456156,
+  "summary_excel_seconds": 3.133044908987358,
+  "summary_excel_bytes": 7058,
+  "peak_rss_mib": 712.453125
+}

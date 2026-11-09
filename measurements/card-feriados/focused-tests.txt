@@ -1,0 +1,22 @@
+2026-10-15 15:52:38.626 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.626 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.626 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 15:52:38.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+test_empty_stale_and_mismatch_do_not_offer_incorrect_excel_or_leak_xml (test_holiday_card.HolidayCardTests.test_empty_stale_and_mismatch_do_not_offer_incorrect_excel_or_leak_xml) ... ok
+test_exact_charged_ids_originals_amounts_filters_and_events (test_holiday_card.HolidayCardTests.test_exact_charged_ids_originals_amounts_filters_and_events) ... ok
+test_frozen_holidays_and_delete_restore_preserved (test_holiday_card.HolidayCardTests.test_frozen_holidays_and_delete_restore_preserved) ... ok
+test_panel_is_lazy_quantity_inside_card_and_missing_dates_not_prominent (test_holiday_card.HolidayCardTests.test_panel_is_lazy_quantity_inside_card_and_missing_dates_not_prominent) ... 2026-10-15 15:52:38.760 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.013s
+
+OK

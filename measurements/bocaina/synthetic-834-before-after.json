@@ -1,0 +1,48 @@
+{
+  "month": "2026-09",
+  "available": true,
+  "synthetic": true,
+  "before": {
+    "charged": 4,
+    "pending": 834
+  },
+  "after": {
+    "charged": 4,
+    "pending": 0
+  },
+  "charged_ids_changed": 0,
+  "financial_before_cents": 116064,
+  "financial_after_cents": 116064,
+  "five_units": {
+    "138": 838,
+    "128": 0,
+    "137": 0,
+    "impressao": 0,
+    "apontamento": 0
+  },
+  "bocaina_by_day_status": [
+    {
+      "day": "2026-09-08",
+      "status": "Não aplicável — outro município",
+      "n": 209
+    },
+    {
+      "day": "2026-09-09",
+      "status": "Não aplicável — outro município",
+      "n": 209
+    },
+    {
+      "day": "2026-09-14",
+      "status": "Não aplicável — outro município",
+      "n": 208
+    },
+    {
+      "day": "2026-09-15",
+      "status": "Não aplicável — outro município",
+      "n": 208
+    }
+  ],
+  "financial_unchanged": true,
+  "read_only": true,
+  "real_834_user_records_available": false
+}

@@ -1,0 +1,25 @@
+{
+  "artificial_load_fixture": false,
+  "stages": {
+    "monthly_sql_cold": 0.0185,
+    "daily_sql_cold": 0.0164,
+    "record_page_100": 0.0055,
+    "record_last_page_100": 0.0069,
+    "ranking_employee": 0.0167,
+    "ranking_city": 0.0166,
+    "ranking_group": 0.0141,
+    "monthly_cache_fill": 0.0265,
+    "monthly_cache_hit": 0.0003,
+    "summary_excel": 0.0144,
+    "summary_pdf": 0.042,
+    "initial_screen": 0.5565,
+    "Importar planilhas": 0.0443,
+    "Fechamento mensal": 0.0626,
+    "Produtividade": 0.0564,
+    "Relatórios": 0.0556,
+    "Painel inicial": 0.045,
+    "day_filter_ui": 0.0647
+  },
+  "records": 19668,
+  "peak_rss_mib": 188.86
+}

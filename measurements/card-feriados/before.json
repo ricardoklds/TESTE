@@ -1,0 +1,12 @@
+{
+  "variant": "before",
+  "server_panel_first_month_seconds": 5.021618897997541,
+  "server_panel_cached_seconds_samples": [
+    0.06551597101497464,
+    0.06446196101023816,
+    0.06416639001690783
+  ],
+  "detail_queries_on_panel_load": 0,
+  "financial_total_display": "R$ 1.439.999,45",
+  "holiday_value_display": "R$ 24.999,45"
+}

@@ -1,0 +1,29 @@
+{
+  "synthetic": true,
+  "rows": 100000,
+  "baseline": "57c8290",
+  "production_accessed": false,
+  "before": {
+    "variant": "before",
+    "summary_seconds": [
+      0.46015581500250846,
+      0.4615458890039008,
+      0.4596807879861444
+    ],
+    "inspection_cents": 120000000,
+    "quantity": 100000
+  },
+  "after": {
+    "variant": "after",
+    "summary_seconds": [
+      0.4817674480145797,
+      0.49021137700765394,
+      0.4800512579968199
+    ],
+    "inspection_cents": 120000000,
+    "quantity": 100000,
+    "impact_preview_seconds": 1.101351835008245,
+    "impact_delta_cents": 105000000,
+    "simulation_bank_unchanged": true
+  }
+}
