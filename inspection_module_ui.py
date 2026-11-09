@@ -134,9 +134,14 @@ def render(data,month,page):
                 try:api.review(root,id,month,decision,code);st.rerun()
                 except ValueError as e:st.error(str(e))
 
+@st.cache_data(show_spinner=False,max_entries=2)
+def import_preview(content,sheet):
+    import inspections
+    return inspections.preview(content,sheet)
+
 def import_panel(root):
     import inspections
-    st.info('Fonte inicial confirmada: aba Número OS. A dinâmica e as cópias não entram como novos registros. Importações anteriores não precisam ser repetidas.')
+    st.info('Modelos compatíveis: Número OS e Execução, com identificação pelos cabeçalhos. A dinâmica e as cópias não entram como novos registros. Importações anteriores não precisam ser repetidas.')
     upload=st.file_uploader('Excel original de Vistorias',type=['xlsx'])
     if upload:
         content=upload.getvalue()
@@ -144,6 +149,18 @@ def import_panel(root):
         except Exception as e:st.error(str(e));return
         if not options:st.error('Nenhuma aba de registros de vistorias válida.');return
         sheet=st.selectbox('Aba original',options,index=options.index('Número OS') if 'Número OS' in options else 0)
+        try:preview=import_preview(content,sheet)
+        except Exception as e:st.error(str(e));return
+        st.subheader('Prévia da importação')
+        st.write(f"Registros: {preview['records']:,}")
+        st.dataframe(pd.DataFrame([{'Competência de conclusão':m,'Registros':n} for m,n in sorted(preview['months'].items())]),hide_index=True)
+        with st.expander('Campos reconhecidos'):
+            st.dataframe(pd.DataFrame([{'Campo utilizado':k,'Cabeçalho original':v} for k,v in preview['fields'].items()]),hide_index=True)
+        if preview['missing_deadline']:
+            st.warning(f"{preview['missing_deadline']:,} registros sem Prazo Final válido. Cumprimento de prazo e meta de 99% dependem de complementação; não serão inventadas datas. Data Início Execução não substitui prazo contratual.")
+        for key,label in [('invalid_execution','sem Data Fim Execução válida (sem competência presumida)'),('missing_os','sem Número OS'),('missing_tss','sem descrição TSS')]:
+            if preview[key]:st.warning(f"{preview[key]:,} registros {label}.")
+        st.caption('A prévia não grava registros. Reimportações idênticas são bloqueadas; as regras existentes de OS e competências aprovadas permanecem válidas.')
         if st.button('Importar Vistorias'):
             try:
                 with st.status('Importando em lotes…') as status:

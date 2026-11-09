@@ -16,6 +16,51 @@ class ClosingConnection(sqlite3.Connection):
 
 HEADERS=('Número OS','Município','Status da OS','Status da Operação','Prazo de Execução - Início','Prazo de Execução - Fim','Data Fim Execução','TSS')
 
+# Nomes exatos normalizados, sem inferência por posição ou similaridade.
+REQUIRED=('Número OS','Município','Status da OS','Status da Operação','Data Fim Execução','TSS')
+ALIASES={'Descrição TSS':'TSS','Prazo Final':'Prazo de Execução - Fim'}
+
+def header_map(headers):
+    import unicodedata
+    def key(value):return ' '.join(''.join(c for c in unicodedata.normalize('NFKD',str(value or '')) if not unicodedata.combining(c)).casefold().split())
+    known={key(k):k for k in (*HEADERS,'Data Início Execução','Código TSS')}
+    known.update({key(k):v for k,v in ALIASES.items()})
+    result={}
+    for h in headers:
+        canonical=known.get(key(h))
+        if canonical:
+            if canonical in result:raise ValueError('Cabeçalho ambíguo: '+canonical)
+            result[canonical]=h
+    missing=[k for k in REQUIRED if k not in result]
+    if missing:raise ValueError('Cabeçalhos obrigatórios ausentes: '+', '.join(missing))
+    return result
+
+def canonical_row(headers,row,mapping):
+    raw=dict(zip(headers,row))
+    # Preserva todos os campos de origem; aliases adicionais alimentam o contrato existente.
+    for canonical,original in mapping.items():
+        if canonical not in raw:raw[canonical]=raw.get(original)
+    return raw
+
+def preview(content,sheet):
+    """Resumo em streaming, sem abrir ou alterar bancos de dados."""
+    w=openpyxl.load_workbook(BytesIO(content),read_only=True,data_only=True)
+    try:
+        source=w[sheet];source.reset_dimensions()  # O export Sabesp declara A1 mesmo com milhares de linhas.
+        rows=source.iter_rows(values_only=True);headers=next(rows,());mapping=header_map(headers)
+        result={'records':0,'months':{},'fields':mapping,'missing_deadline':0,'invalid_execution':0,'missing_os':0,'missing_tss':0}
+        for row in rows:
+            if not any(v is not None and str(v).strip() for v in row):continue
+            raw=canonical_row(headers,row,mapping);result['records']+=1
+            dt=date_value(raw.get('Data Fim Execução'))
+            if dt:result['months'][dt[:7]]=result['months'].get(dt[:7],0)+1
+            else:result['invalid_execution']+=1
+            if not date_value(raw.get('Prazo de Execução - Fim')):result['missing_deadline']+=1
+            if not str(raw.get('Número OS') or '').strip():result['missing_os']+=1
+            if not str(raw.get('TSS') or '').strip():result['missing_tss']+=1
+        return result
+    finally:w.close()
+
 def date_value(value):
     if isinstance(value,datetime):return value.isoformat(timespec='seconds')
     try:return datetime.strptime(str(value).strip(),'%d/%m/%Y %H:%M').isoformat()
@@ -47,7 +92,13 @@ def connect(root):
 def sheets(content):
     w=openpyxl.load_workbook(BytesIO(content),read_only=True,data_only=True)
     try:
-        return [s.title for s in w if all(k in next(s.iter_rows(min_row=1,max_row=1,values_only=True),()) for k in HEADERS)]
+        valid=[]
+        for sheet in w:
+            sheet.reset_dimensions()
+            try:header_map(next(sheet.iter_rows(min_row=1,max_row=1,values_only=True),()))
+            except ValueError:continue
+            valid.append(sheet.title)
+        return valid
     finally:w.close()
 
 def import_file(root,content,name,sheet,progress=None):
@@ -57,8 +108,8 @@ def import_file(root,content,name,sheet,progress=None):
         # Apenas uma base operacional por arquivo: impede somar a cópia Planilha5.
         c.execute('BEGIN IMMEDIATE')
         if c.execute('SELECT 1 FROM imports WHERE sha=?',(sha,)).fetchone():raise ValueError('Este arquivo já possui uma aba importada. Nenhuma linha foi adicionada.')
-        s=w[sheet];rows=s.iter_rows(values_only=True);headers=next(rows)
-        if not all(k in headers for k in HEADERS):raise ValueError('Cabeçalhos obrigatórios ausentes.')
+        s=w[sheet];s.reset_dimensions();rows=s.iter_rows(values_only=True);headers=next(rows)
+        mapping=header_map(headers)
         dest=Path(root)/'originais';dest.mkdir(exist_ok=True);target=dest/(sha+'.xlsx')
         if target.exists():
             if hashlib.sha256(target.read_bytes()).hexdigest()!=sha:raise ValueError('Original arquivado inconsistente.')
@@ -74,7 +125,7 @@ def import_file(root,content,name,sheet,progress=None):
         batch=[];count=0
         for line,row in enumerate(rows,2):
             if not any(v is not None and str(v).strip() for v in row):continue
-            raw=dict(zip(headers,row));dt=date_value(raw.get('Data Fim Execução'))
+            raw=canonical_row(headers,row,mapping);dt=date_value(raw.get('Data Fim Execução'))
             if dt and dt[:7] in approved_months:raise ValueError('Há execução em competência de vistorias já aprovada. Nenhum registro foi importado.')
             city=str(raw.get('Município') or '').strip() or 'Não informado'
             batch.append((import_id,line,str(raw.get('Número OS') or ''),city,dt[:10] if dt else None,classification(raw),hashlib.sha256(json.dumps(raw,ensure_ascii=False,default=str,sort_keys=True).encode()).hexdigest(),json.dumps(raw,ensure_ascii=False,default=str)))
