@@ -1,6 +1,6 @@
 """Menu expansível; os rótulos públicos preservam as rotas internas de Leituras."""
-MODULES=['Painel geral','Leituras','Vistorias','Fechamento geral','Configurações']
-PAGES={'Leituras':['Painel inicial','Importar planilhas','Fechamento mensal','Produtividade','Relatórios'],
+MODULES=['Painel geral','Leituras','Vistorias','Fechamento geral','Faturamento Anual','Configurações']
+PAGES={'Faturamento Anual':['Faturamento Anual'],'Leituras':['Painel inicial','Importar planilhas','Fechamento mensal','Produtividade','Relatórios'],
 'Vistorias':['Painel de Vistorias','Importação de Vistorias','Prazos e Meta Contratual','Produtividade de Vistorias','Geolocalização','Faturamento de Vistorias','Relatórios de Vistorias'],
 'Painel geral':['Visão consolidada do contrato'],'Fechamento geral':['Consolidação financeira mensal'],
 'Configurações':['Serviços e Preços de Vistorias','Municípios do Contrato','Regras comerciais de Vistorias','Configurações']}
@@ -21,6 +21,7 @@ def sidebar(st):
         with st.expander(group,expanded=module==group):
             for entry in PAGES[group]:link(group,entry,LABELS.get(entry,entry))
     link('Fechamento geral',PAGES['Fechamento geral'][0],'Fechamento Geral')
+    link('Faturamento Anual','Faturamento Anual','Faturamento Anual')
     with st.expander('Configurações',expanded=module=='Configurações'):
         for entry in PAGES['Configurações']:link('Configurações',entry,LABELS.get(entry,entry))
     return module,page

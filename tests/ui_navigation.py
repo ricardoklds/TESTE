@@ -2,7 +2,8 @@
 def navigate(app,page=None,module=None):
     if page=='Serviços e Tabela de Preços':module,page='Configurações','Serviços e Preços de Vistorias'
     if page is None:
-        page={'Leituras':'Painel inicial','Vistorias':'Painel de Vistorias','Configurações':'Configurações','Painel geral':'Visão consolidada do contrato','Fechamento geral':'Consolidação financeira mensal'}[module]
+        page={'Faturamento Anual':'Faturamento Anual','Leituras':'Painel inicial','Vistorias':'Painel de Vistorias','Configurações':'Configurações','Painel geral':'Visão consolidada do contrato','Fechamento geral':'Consolidação financeira mensal'}[module]
+    if page=='Faturamento Anual':module='Faturamento Anual'
     if module is None:
         if page in ['Serviços e Preços de Vistorias','Municípios do Contrato','Regras comerciais de Vistorias','Configurações']:module='Configurações'
         elif page in ['Painel de Vistorias','Importação de Vistorias','Prazos e Meta Contratual','Produtividade de Vistorias','Geolocalização','Faturamento de Vistorias','Relatórios de Vistorias']:module='Vistorias'
